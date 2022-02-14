@@ -1,202 +1,297 @@
-#!/usr/bin/env stack
--- stack --resolver lts-17.6 script
-{-# LANGUAGE
-    DeriveFoldable
-  , DeriveFunctor
-  , DeriveTraversable
-  , FlexibleContexts
-  , LambdaCase
-  , NoImplicitPrelude
-  , OverloadedStrings
-  , PackageImports
-  , RecordWildCards
-  , TupleSections
-  , ViewPatterns
-#-}
--- |
--- This script updates CHANGELOG.md with the contents of CHANGELOG.d, and
--- empties CHANGELOG.d. It takes care of:
---
--- * Sorting entries by the order in which their PRs were merged
--- * Appending (#1234 by @author) to the first line of each fragment,
---   optionally adding multiple PR numbers and/or authors as applicable
--- * Grouping entries by type and adding non-empty group headings to the
---   changelog
--- * Syncing any affected files to the Git index, preparing for you to make
---   your release commit
---
--- Be sure to run this *after* updating the version number in
--- npm-package/package.json, as that's where this script gets the new section
--- header from.
---
+module Main where
 
-module Main (main) where
+import Prelude
 
-import Protolude hiding (intercalate, readFile, writeFile)
-import qualified Protolude
+import Affjax (defaultRequest, printError)
+import Affjax as Affjax
+import Affjax.RequestHeader (RequestHeader(..))
+import Affjax.ResponseFormat as ARF
+import Affjax.StatusCode (StatusCode(..))
+import Control.Alt ((<|>))
+import Control.Apply (lift2)
+import Data.Argonaut.Decode (class DecodeJson, decodeJson, parseJson, printJsonDecodeError)
+import Data.Array as Array
+import Data.Array.NonEmpty as NEA
+import Data.DateTime (DateTime)
+import Data.Either (Either(..), either, hush)
+import Data.Formatter.DateTime (unformat)
+import Data.HTTP.Method (Method(..))
+import Data.Int as Int
+import Data.Maybe (Maybe(..), isJust, maybe)
+import Data.MediaType (MediaType(..))
+import Data.Newtype (class Newtype, over, unwrap)
+import Data.Nullable (Nullable)
+import Data.Nullable as Nullable
+import Data.Posix.Signal (Signal(..))
+import Data.RFC3339String.Format (iso8601Format)
+import Data.String (Pattern(..), Replacement(..), toLower)
+import Data.String as String
+import Data.Traversable (for, traverse)
+import Data.Tuple (Tuple(..), fst, snd)
+import Debug (spy)
+import Effect (Effect)
+import Effect.Aff (Aff, effectCanceler, launchAff_, makeAff)
+import Effect.Aff.Class (class MonadAff, liftAff)
+import Effect.Class (liftEffect)
+import Effect.Class.Console (log)
+import Effect.Exception (throw)
+import Foreign.Object as FO
+import Node.Buffer as Buffer
+import Node.ChildProcess (ExecOptions, defaultExecOptions)
+import Node.ChildProcess as ChildProcess
+import Node.Encoding (Encoding(..))
+import Node.FS.Aff as FSA
+import Node.Path (FilePath)
+import Node.Path as Path
+import Node.Process as Process
+import Partial.Unsafe (unsafeCrashWith)
 
-import           Control.Monad.Fail (fail)
-import qualified Data.Aeson as JSON
-import           Data.Attoparsec.ByteString (maybeResult, parse)
-import "bifunctors"
-                 Data.Bifunctor.Flip (Flip(..))
-import qualified Data.ByteString as BS
-import qualified Data.HashMap.Lazy as HM
-import qualified Data.List.NonEmpty as NEL
-import           Data.String (String)
-import qualified Data.String as String
-import qualified Data.Text as T
-import           Data.Time.Clock (UTCTime)
-import           Data.Time.Format.ISO8601 (iso8601ParseM)
-import           Data.Time.LocalTime (zonedTimeToUTC)
-import           GitHub.REST (GHEndpoint(..), GitHubState(..), KeyValue(..), MonadGitHubREST, StdMethod(..), queryGitHub, runGitHubT)
-import qualified SimpleCmd.Git as IOGit
-import           System.Directory (setCurrentDirectory)
-import           System.FilePath (normalise, takeFileName, (</>))
+main :: Effect Unit
+main = launchAff_ do
+  git "rev-parse" [ "--show-toplevel" ] >>= liftEffect <<< Process.chdir <<< String.trim <<< _.stdout
+  entries <- (lines <<< _.stdout) <$> git "ls-tree" [ "--name-only", "HEAD", "CHANGELOG.d/" ]
+  log $ "Entries are: " <> show entries
 
-main = runGitHubT gitHubState $ do
-  git "rev-parse" ["--show-toplevel"] >>= liftIO . setCurrentDirectory
-  entries <- String.lines <$> git "ls-tree" ["--name-only", "HEAD", "CHANGELOG.d/"]
+  let processEntriesStartingWith' = processEntriesStartingWith "purescript" "purescript"
 
-  breaks   <- processEntriesStartingWith "break" entries
-  features <- processEntriesStartingWith "feat" entries
-  fixes    <- processEntriesStartingWith "fix" entries
-  internal <- processEntriesStartingWith "int" entries
-  misc     <- processEntriesStartingWith "misc" entries
+  breaks <- processEntriesStartingWith' "break" entries
+  features <- processEntriesStartingWith' "feat" entries
+  fixes <- processEntriesStartingWith' "fix" entries
+  internal <- processEntriesStartingWith' "int" entries
+  misc <- processEntriesStartingWith' "misc" entries
 
-  let entryFiles = ceFile <$> breaks <> features <> fixes <> internal <> misc
-  unless (null entryFiles) $ do
+  let entryFiles = (_.file <<< unwrap) <$> breaks <> features <> fixes <> internal <> misc
+  unless (Array.null entryFiles) $ do
 
-    changes <- git "status" ("-s" : "--" : "CHANGELOG.md" : entryFiles)
-    unless (null changes) . liftIO . die $
-      "You have uncommitted changes to changelog files. " <>
-      "Please commit, stash, or revert them before running this script."
+    -- changes <- map (lines <<< _.stdout) $ git "status" $ [ "-s", "--", "CHANGELOG.md" ] <> entryFiles
+    -- unless (Array.null changes) $ liftEffect $ throw $
+    --   "You have uncommitted changes to changelog files. " <>
+    --     "Please commit, stash, or revert them before running this script."
 
     version <- getVersion
-    (changelogPreamble, changelogRest) <- T.breakOn "\n## " <$> readFile "CHANGELOG.md"
+    { before: changelogPreamble, after: changelogRest } <- breakOn (Pattern "\n## ") <$> readFile "CHANGELOG.md"
     writeFile "CHANGELOG.md" $
-         changelogPreamble
-      <> "\n## " <> version <> "\n"
-      <> conditionalSection "Breaking changes" breaks
-      <> conditionalSection "New features" features
-      <> conditionalSection "Bugfixes" fixes
-      <> conditionalSection "Other improvements" misc
-      <> conditionalSection "Internal" internal
-      <> changelogRest
+      changelogPreamble
+        <> "\n## "
+        <> version
+        <> "\n"
+        <> conditionalSection "Breaking changes" breaks
+        <> conditionalSection "New features" features
+        <> conditionalSection "Bugfixes" fixes
+        <> conditionalSection "Other improvements" misc
+        <> conditionalSection "Internal" internal
+        <> changelogRest
 
-    git_ "add" ["CHANGELOG.md"]
-    git_ "rm" $ "-q" : entryFiles
+    void $ git "add" [ "CHANGELOG.md" ]
+    void $ git "rm" $ Array.cons "-q" $ map wrapQuotes entryFiles
 
-gitHubState :: GitHubState
-gitHubState = GitHubState Nothing "purescript/purescript update-changelog.hs" "v3"
+processEntriesStartingWith :: String -> String -> String -> Array String -> Aff (Array ChangelogEntry)
+processEntriesStartingWith owner repo prefix = map (Array.sortWith (_.date <<< unwrap))
+  <<< traverse (updateEntry owner repo)
+  <<< Array.filter ((isJust <<< String.stripPrefix (Pattern prefix)) <<< toLower <<< Path.basename)
 
-processEntriesStartingWith :: (MonadFail m, MonadGitHubREST m, MonadIO m) => String -> [String] -> m [ChangelogEntry]
-processEntriesStartingWith prefix
-  = fmap (sortOn ceDate)
-  . traverse updateEntry
-  . filter ((prefix `isPrefixOf`) . map toLower . takeFileName)
+updateEntry :: String -> String -> String -> Aff ChangelogEntry
+updateEntry owner repo file = do
+  { before: header, after: body } <- map (breakOn (Pattern "\n") <<< String.trim) $ (readFile <<< Path.normalize) file
 
-updateEntry :: (MonadFail m, MonadGitHubREST m, MonadIO m) => String -> m ChangelogEntry
-updateEntry file = do
-  (header, body) <- T.breakOn "\n" . T.strip <$> (readFile . normalise) file
+  allCommits <- do
+    -- 2c78eb614cb1f3556737900e57d0e7395158791e 2021-11-17T13:27:33-08:00 Title of PR (#4121)
+    lns <- map (lines <<< _.stdout) $ git "log" [ "-m", "--follow", "--format=\"%H %cI %s\"", wrapQuotes file ]
+    mbRes <- for lns \str -> do
+      log $ "For file '" <> file <> "', got string: " <> str
+      let
+        { before: hash, after: b } = breakOn (Pattern " ") str
+        { before: dateTime, after } = breakOn (Pattern " ") $ String.drop 1 b
+      let
+        mbTime = do
+          str' <- Nullable.toMaybe $ toUtcDate dateTime
+          hush $ unformat iso8601Format str'
+      pure $ mbTime <#> \time -> GitLogCommit
+        { data: String.drop 1 after
+        , hash
+        , time
+        }
+    case NEA.fromArray $ Array.sortWith (_.time <<< unwrap) $ Array.catMaybes mbRes of
+      Nothing -> liftEffect $ throw $ "No commits for file: " <> file
+      Just x -> pure x
 
-  allCommits <-
-        fmap (NEL.fromList . sortOn glcTime)
-    .   traverse (\(T.breakOn " " -> (h, T.breakOn " " . T.tail -> (c, s))) ->
-          GitLogCommit (T.tail s) h . zonedTimeToUTC <$> iso8601ParseM (toS c))
-    =<< gitLines "log" ["-m", "--follow", "--format=%H %cI %s", file]
+  prCommits <- map Array.catMaybes $ for (NEA.toArray allCommits) \glc -> do
+    case parsePRNumber (_.data $ unwrap glc) of
+      Nothing -> pure Nothing
+      Just x -> do
+        let glcWithIntPr = over GitLogCommit (_ { data = x }) glc
+        interesting <- isInterestingCommit glcWithIntPr
+        pure if interesting then Just glcWithIntPr else Nothing
 
-  prCommits <-
-      filterM isInterestingCommit
-    . mapMaybe (traverse parsePRNumber)
-    $ NEL.toList allCommits
+  let prNumbers = map (snd <<< _.data <<< unwrap) prCommits
 
-  let prNumbers = map (snd . glcData) prCommits
+  prAuthors <- Array.nub <$> traverse (lookupPRAuthor owner repo) prNumbers
 
-  prAuthors <- ordNub <$> traverse lookupPRAuthor prNumbers
+  let
+    headerSuffix =
+      if Array.null prNumbers then ""
+      else
+        " ("
+          <> commaSeparate (map ((append "#") <<< show) prNumbers)
+          <> " by "
+          <> commaSeparate (map (append "@") prAuthors)
+          <> ")"
 
-  let headerSuffix = if null prNumbers then "" else
-           " ("
-        <> commaSeparate (map (("#" <>) . show) prNumbers)
-        <> " by "
-        <> commaSeparate (map ("@" <>) prAuthors)
-        <> ")"
+  pure $ ChangelogEntry
+    { file
+    , content: header <> headerSuffix <> body <> "\n"
+    , date: (_.time <<< unwrap) $ NEA.head allCommits
+    }
 
-  pure $ ChangelogEntry file (header <> headerSuffix <> body <> "\n") (glcTime $ NEL.head allCommits)
+parsePRNumber :: String -> Maybe (Tuple CommitType Int)
+parsePRNumber = lift2 (<|>) parseMerge parseSquash
+  where
+  parseMerge s = do
+    res <- String.stripPrefix (Pattern "Merge pull request #") s
+    map (Tuple MergeCommit) $ Int.fromString $ _.before $ breakOn (Pattern " ") res
 
-parsePRNumber :: Text -> Maybe (CommitType, Int)
-parsePRNumber = liftA2 (<|>)
-  (fmap (MergeCommit, ) . readMaybe . toS . fst . T.breakOn " " <=< T.stripPrefix "Merge pull request #")
-  (fmap (SquashCommit, ) . readMaybe . toS <=< T.stripSuffix ")" . snd . T.breakOnEnd "(#")
+  parseSquash s = do
+    res <- String.stripSuffix (Pattern ")") $ _.after $ breakOnEnd (Pattern "(#") s
+    map (Tuple SquashCommit) $ Int.fromString res
 
 -- |
 -- This function helps us exclude PRs that are just fixups of changelog
 -- wording. An interesting commit is one that has either edited a file that
 -- isn't part of the changelog, or is a merge commit.
 --
-isInterestingCommit :: MonadIO m => GitLogCommit (CommitType, Int) -> m Bool
-isInterestingCommit GitLogCommit{..} = case fst glcData of
-  MergeCommit -> pure True
-  SquashCommit ->
-    not . all (\path -> "CHANGELOG.md" == path || "CHANGELOG.d/" `T.isPrefixOf` path)
-      <$> gitLines "show" ["--format=", "--name-only", toS glcHash]
+isInterestingCommit :: forall m. MonadAff m => GitLogCommit (Tuple CommitType Int) -> m Boolean
+isInterestingCommit (GitLogCommit r) = case fst r.data of
+  MergeCommit -> pure true
+  SquashCommit -> do
+    { stdout } <- git "show" [ "--format=", "--name-only", r.hash ]
+    pure
+      $ not
+      $ Array.all (\path -> "CHANGELOG.md" == path || (isJust $ String.stripPrefix (Pattern "CHANGELOG.d/") path))
+      $ lines stdout
 
-lookupPRAuthor :: (MonadFail m, MonadGitHubREST m) => Int -> m Text
-lookupPRAuthor prNum =
-  queryGitHub GHEndpoint{ method = GET
-                        , endpoint = "/repos/purescript/purescript/pulls/:pr"
-                        , endpointVals = ["pr" := prNum]
-                        , ghData = []
-                        }
-    >>= \case
-      JSON.Object (HM.lookup "user" -> Just (JSON.Object (HM.lookup "login" -> Just (JSON.String name)))) -> pure name
-      _ -> fail "error accessing GitHub API"
+lookupPRAuthor :: forall m. MonadAff m => String -> String -> Int -> m String
+lookupPRAuthor owner repo prNum = do
+  resp <- liftAff $ Affjax.request $ defaultRequest
+    { url = "https://api.github.com/repos/" <> owner <> "/" <> repo <> "/pulls/" <> show prNum
+    , responseFormat = ARF.json
+    , method = Left GET
+    , headers =
+        [ Accept $ MediaType "application/vnd.github.v3+json" ]
+    }
+  case resp of
+    Left err -> liftEffect $ throw $ printError err
+    Right js | js.status == StatusCode 200 -> case decodeJson js.body of
+      Left e -> liftEffect $ throw $ "Error in lookupPRAuthor: " <> printJsonDecodeError e
+      Right (Author rec) -> pure rec.user.login
+    Right js -> do
+      liftEffect $ throw $ "Lookup PR author failed. " <> show js.status <> " " <> show js.statusText
 
-commaSeparate :: [Text] -> Text
-commaSeparate = \case
+commaSeparate :: Array String -> String
+commaSeparate = case _ of
   [] -> ""
-  [a] -> a
-  [a, b] -> a <> " and " <> b
-  more | Just (init, last) <- unsnoc more -> T.intercalate ", " init <> ", and " <> last
+  [ a ] -> a
+  [ a, b ] -> a <> " and " <> b
+  more
+    | Just { init, last } <- Array.unsnoc more -> String.joinWith ", " init <> ", and " <> last
+    | otherwise -> unsafeCrashWith "This is not possible"
 
-getVersion :: (MonadFail m, MonadIO m) => m Text
-getVersion =
-  (liftIO . BS.readFile) ("npm-package" </> "package.json") >>= \case
-    (maybeResult . parse JSON.json -> Just (JSON.Object (HM.lookup "version" -> Just (JSON.String v)))) -> pure v
-    _ -> fail "could not read version from npm-package/package.json"
+getVersion :: Aff String
+getVersion = do
+  unlessM (FSA.exists "npm-package/package.json") do
+    liftEffect $ throw "`package.json` file not found. Cannot use it to get the version."
+  content <- liftAff $ FSA.readTextFile UTF8 "npm-package/package.json"
+  case parseJson content >>= spy "Version json" >>> decodeJson of
+    Left e -> liftEffect $ throw $ "Error in getVersion: " <> printJsonDecodeError e
+    Right (Version { version }) -> pure version
 
-conditionalSection :: Text -> [ChangelogEntry] -> Text
-conditionalSection header = \case
+conditionalSection :: String -> Array ChangelogEntry -> String
+conditionalSection header = case _ of
   [] -> ""
   entries ->
-    "\n" <> header <> ":\n\n" <> T.intercalate "\n" (map ceContent entries)
+    "\n" <> header <> ":\n\n" <> String.joinWith "\n" (map (_.content <<< unwrap) entries)
 
-git :: MonadIO m => String -> [String] -> m String
-git cmd = liftIO . IOGit.git cmd
+git :: forall m. MonadAff m => String -> Array String -> m { stdout :: String, stderr :: String }
+git cmd = liftAff <<< runCmd "git" <<< Array.cons cmd
 
-git_ :: MonadIO m => String -> [String] -> m ()
-git_ cmd = liftIO . IOGit.git_ cmd
+readFile :: forall m. MonadAff m => FilePath -> m String
+readFile = liftAff <<< FSA.readTextFile UTF8
 
-gitLines :: MonadIO m => String -> [String] -> m [Text]
-gitLines cmd args = lines . toS <$> git cmd args
+writeFile :: forall m. MonadAff m => FilePath -> String -> m Unit
+writeFile path = liftAff <<< FSA.writeTextFile UTF8 path
 
-readFile :: MonadIO m => FilePath -> m Text
-readFile = liftIO . Protolude.readFile
-
-writeFile :: MonadIO m => FilePath -> Text -> m ()
-writeFile path = liftIO . Protolude.writeFile path
-
-data ChangelogEntry = ChangelogEntry
-  { ceFile :: String
-  , ceContent :: Text
-  , ceDate :: UTCTime
+newtype ChangelogEntry = ChangelogEntry
+  { file :: String
+  , content :: String
+  , date :: DateTime
   }
 
-data GitLogCommit a = GitLogCommit
-  { glcData :: a
-  , glcHash :: Text
-  , glcTime :: UTCTime
-  }
-  deriving (Functor, Foldable, Traversable)
+derive instance newtypeChangelogEntry :: Newtype ChangelogEntry _
 
-data CommitType = MergeCommit | SquashCommit
+newtype GitLogCommit a = GitLogCommit
+  { data :: a
+  , hash :: String
+  , time :: DateTime
+  }
+
+derive instance newtypeGitLogCommit :: Newtype (GitLogCommit a) _
+
+data CommitType
+  = MergeCommit
+  | SquashCommit
+
+breakOn :: Pattern -> String -> { before :: String, after :: String }
+breakOn ptn s = maybe { before: s, after: "" } (flip String.splitAt s) mbIdx
+  where
+  mbIdx = String.indexOf ptn s
+
+breakOnEnd :: Pattern -> String -> { before :: String, after :: String }
+breakOnEnd ptn s = maybe { before: "", after: s } (flip String.splitAt s) mbIdx
+  where
+  mbIdx = String.lastIndexOf ptn s
+
+runCmd :: String -> Array String -> Aff { stdout :: String, stderr :: String }
+runCmd = runCmd' (defaultExecOptions { cwd = Just "." })
+
+runCmd' :: ExecOptions -> String -> Array String -> Aff { stdout :: String, stderr :: String }
+runCmd' options cmd args = makeAff \cb -> do
+  log $ "Running full command: [" <> fullCommand <> "]"
+  proc <- ChildProcess.exec fullCommand options \res -> do
+    stdout <- Buffer.toString UTF8 res.stdout
+    stderr <- Buffer.toString UTF8 res.stderr
+    when (stderr /= "") do
+      log $ "Stderr: " <> stderr
+    cb $ Right { stdout, stderr }
+  pure $ effectCanceler do
+    ChildProcess.kill SIGKILL proc
+  where
+  fullCommand = cmd <> " " <> String.joinWith " " args
+
+lines :: String -> Array String
+lines = String.split (Pattern "\n")
+
+filterM :: forall m a. Monad m => (a -> m Boolean) -> Array a -> m (Array a)
+filterM p arr = do
+  map Array.catMaybes $ for arr \a -> do
+    res <- p a
+    pure if res then Just a else Nothing
+
+wrapQuotes :: String -> String
+wrapQuotes s = "\"" <> s <> "\""
+
+foreign import toUtcDate :: String -> Nullable String
+
+newtype Author = Author { user :: { login :: String } }
+
+derive instance newtypeAuthor :: Newtype Author _
+instance DecodeJson Author where
+  decodeJson j = do
+    rec <- decodeJson j
+    pure $ Author rec
+
+newtype Version = Version { version :: String }
+
+derive instance newtypeVersion :: Newtype Version _
+instance DecodeJson Version where
+  decodeJson j = do
+    rec <- decodeJson j
+    pure $ Version rec
