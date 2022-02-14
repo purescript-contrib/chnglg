@@ -13,7 +13,7 @@ import Data.Argonaut.Decode (class DecodeJson, decodeJson, parseJson, printJsonD
 import Data.Array as Array
 import Data.Array.NonEmpty as NEA
 import Data.DateTime (DateTime)
-import Data.Either (Either(..), either, hush)
+import Data.Either (Either(..), hush)
 import Data.Formatter.DateTime (unformat)
 import Data.HTTP.Method (Method(..))
 import Data.Int as Int
@@ -24,18 +24,15 @@ import Data.Nullable (Nullable)
 import Data.Nullable as Nullable
 import Data.Posix.Signal (Signal(..))
 import Data.RFC3339String.Format (iso8601Format)
-import Data.String (Pattern(..), Replacement(..), toLower)
+import Data.String (Pattern(..), toLower)
 import Data.String as String
 import Data.Traversable (for, traverse)
 import Data.Tuple (Tuple(..), fst, snd)
-import Debug (spy)
 import Effect (Effect)
 import Effect.Aff (Aff, effectCanceler, launchAff_, makeAff)
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class (liftEffect)
-import Effect.Class.Console (log)
 import Effect.Exception (throw)
-import Foreign.Object as FO
 import Node.Buffer as Buffer
 import Node.ChildProcess (ExecOptions, defaultExecOptions)
 import Node.ChildProcess as ChildProcess
@@ -50,7 +47,6 @@ main :: Effect Unit
 main = launchAff_ do
   git "rev-parse" [ "--show-toplevel" ] >>= liftEffect <<< Process.chdir <<< String.trim <<< _.stdout
   entries <- (lines <<< _.stdout) <$> git "ls-tree" [ "--name-only", "HEAD", "CHANGELOG.d/" ]
-  log $ "Entries are: " <> show entries
 
   let processEntriesStartingWith' = processEntriesStartingWith "purescript" "purescript"
 
@@ -63,10 +59,10 @@ main = launchAff_ do
   let entryFiles = (_.file <<< unwrap) <$> breaks <> features <> fixes <> internal <> misc
   unless (Array.null entryFiles) $ do
 
-    -- changes <- map (lines <<< _.stdout) $ git "status" $ [ "-s", "--", "CHANGELOG.md" ] <> entryFiles
-    -- unless (Array.null changes) $ liftEffect $ throw $
-    --   "You have uncommitted changes to changelog files. " <>
-    --     "Please commit, stash, or revert them before running this script."
+    changes <- git "status" $ [ "-s", "--" ] <> (map wrapQuotes $ Array.cons "CHANGELOG.md" entryFiles)
+    unless (changes.stdout == "") $ liftEffect $ throw $
+      "You have uncommitted changes to changelog files. " <>
+        "Please commit, stash, or revert them before running this script."
 
     version <- getVersion
     { before: changelogPreamble, after: changelogRest } <- breakOn (Pattern "\n## ") <$> readFile "CHANGELOG.md"
@@ -98,7 +94,6 @@ updateEntry owner repo file = do
     -- 2c78eb614cb1f3556737900e57d0e7395158791e 2021-11-17T13:27:33-08:00 Title of PR (#4121)
     lns <- map (lines <<< _.stdout) $ git "log" [ "-m", "--follow", "--format=\"%H %cI %s\"", wrapQuotes file ]
     mbRes <- for lns \str -> do
-      log $ "For file '" <> file <> "', got string: " <> str
       let
         { before: hash, after: b } = breakOn (Pattern " ") str
         { before: dateTime, after } = breakOn (Pattern " ") $ String.drop 1 b
@@ -200,7 +195,7 @@ getVersion = do
   unlessM (FSA.exists "npm-package/package.json") do
     liftEffect $ throw "`package.json` file not found. Cannot use it to get the version."
   content <- liftAff $ FSA.readTextFile UTF8 "npm-package/package.json"
-  case parseJson content >>= spy "Version json" >>> decodeJson of
+  case parseJson content >>= decodeJson of
     Left e -> liftEffect $ throw $ "Error in getVersion: " <> printJsonDecodeError e
     Right (Version { version }) -> pure version
 
@@ -254,12 +249,12 @@ runCmd = runCmd' (defaultExecOptions { cwd = Just "." })
 
 runCmd' :: ExecOptions -> String -> Array String -> Aff { stdout :: String, stderr :: String }
 runCmd' options cmd args = makeAff \cb -> do
-  log $ "Running full command: [" <> fullCommand <> "]"
+  -- log $ "Running full command: [" <> fullCommand <> "]"
   proc <- ChildProcess.exec fullCommand options \res -> do
     stdout <- Buffer.toString UTF8 res.stdout
     stderr <- Buffer.toString UTF8 res.stderr
-    when (stderr /= "") do
-      log $ "Stderr: " <> stderr
+    -- when (stderr /= "") do
+    --   log $ "Stderr: " <> stderr
     cb $ Right { stdout, stderr }
   pure $ effectCanceler do
     ChildProcess.kill SIGKILL proc
