@@ -1,0 +1,7 @@
+{
+  "name": "up-changelog",
+  "version": "1.0.0",
+  "scripts": {
+    "bundle": "spago bundle-app -m Main -t up-changelog.js"
+  }
+}
