@@ -90,5 +90,4 @@ Use this checklist to help you remember to do everything described above.
 - If the file contains any additional content:
     - [ ] the file has a blank line separating the title part from the body part
     - [ ] each line in the body part is indented by at least two spaces
-
 """
