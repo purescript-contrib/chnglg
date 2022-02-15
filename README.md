@@ -134,6 +134,6 @@ Bugfixes:
 Initial release
 ```
 
-Since there were no files prefixed with `int`, the `Internal` group header isn't included in the updated changelog.
+If prefixes aren't used (e.g. `int` for `Internal`), the group won't appear in the updated changelog.
 
 The maintainer at this point can commit the updated `CHANGELOG.md` file or further edit it before making the new release.
