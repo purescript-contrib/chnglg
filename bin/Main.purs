@@ -97,7 +97,7 @@ cliParser =
           { before: owner, after: slashRepo } = breakOn (Pattern "/") s
           repo = String.drop 1 slashRepo
           check =
-            [ repo /= ""
+            [ repo == ""
             , contains (Pattern "/") repo
             ]
 
