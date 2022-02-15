@@ -57,7 +57,9 @@ genChangelog (GenChangelogArgs { github, versionSource }) = do
   misc <- processEntriesStartingWith' "misc" entries
 
   let entryFiles = (_.file <<< unwrap) <$> breaks <> features <> fixes <> internal <> misc
-  unless (Array.null entryFiles) $ do
+  if (Array.null entryFiles) then do
+    liftEffect $ throw $ "Cannot update changelog file as there aren't any valid entries in '" <> Constants.changelogDir <> "'."
+  else do
 
     changes <- git "status" $ [ "-s", "--" ] <> (map wrapQuotes $ Array.cons Constants.changelogFile entryFiles)
     unless (changes.stdout == "") $ liftEffect $ throw $

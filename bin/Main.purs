@@ -6,13 +6,16 @@ import ArgParse.Basic as Arg
 import Bin.Version (version)
 import Data.Array as Array
 import Data.Bifunctor (bimap)
-import Data.Either (Either(..), note)
+import Data.Either (Either(..))
+import Data.Maybe (isJust)
 import Data.String (Pattern(..), contains, joinWith)
 import Data.String as String
 import Data.Version as Version
 import Effect (Effect)
 import Effect.Aff (launchAff_, throwError)
+import Effect.Class (liftEffect)
 import Effect.Class.Console as Console
+import Node.FS.Aff as FSA
 import Node.Path (sep)
 import Node.Process as Process
 import UpChangelog.Command.GenChangelog (genChangelog)
@@ -37,7 +40,18 @@ main = do
     Right cmd ->
       case cmd of
         GenChangelog options -> do
-          launchAff_ $ genChangelog options
+          launchAff_ do
+            dirExists <- FSA.exists Constants.changelogDir
+            if not $ dirExists then do
+              Console.log $ "Cannot update changelog file as '" <> Constants.changelogDir <> "' does not exist."
+              liftEffect $ Process.exit 1
+            else do
+              entries <- FSA.readdir Constants.changelogDir
+              if Array.null entries then do
+                Console.log $ "Cannot update changelog file as there are no files in '" <> Constants.changelogDir <> "."
+                liftEffect $ Process.exit 1
+              else do
+                genChangelog options
 
         InitChangelog force -> do
           launchAff_ $ initChangelog force
