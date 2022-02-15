@@ -2,6 +2,14 @@
 
 A port of the work done in [`purescript/purescript#4392`](https://github.com/purescript/purescript/pull/4132). Ports the `update-changelog.hs` script from Haskell to PureScript.
 
+## Install
+
+The first working release is `v0.1.5`.
+
+```sh
+npm i purs-changelog
+```
+
 ## Why
 
 To make it easier to keep a good changelog that
