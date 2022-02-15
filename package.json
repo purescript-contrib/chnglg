@@ -1,7 +1,32 @@
 {
-  "name": "up-changelog",
+  "name": "purs-changelog",
   "version": "1.0.0",
+  "description": "A maintainer and contributor-friendly tool for generating a human-readable CHANGELOG.md",
+  "bin": {
+    "purs-changelog": "bin/index.js"
+  },
+  "files": [
+    "bin/index.js",
+    "bundle/**/*.js"
+  ],
   "scripts": {
-    "bundle": "spago bundle-app -m Main -t up-changelog.js"
-  }
+    "build": "spago -x bin/spago.dhall build",
+    "bundle": "npm run build && spago -x bin/spago.dhall bundle-app --to './bundle/Main/index.js' --no-build",
+    "format": "purs-tidy format-in-place src bin",
+    "prepublishOnly": "rm -rf output bundle && npm run bundle"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jordanmartinez/purescript-up-changelog.git"
+  },
+  "keywords": [
+    "PureScript",
+    "changelog"
+  ],
+  "author": "Jordan Martinez <jordanalex.martinez@protonmail.com> (https://github.com/jordanmartinez/)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jordanmartinez/purescript-up-changelog/issues"
+  },
+  "homepage": "https://github.com/jordanmartinez/purescript-up-changelog#readme"
 }
