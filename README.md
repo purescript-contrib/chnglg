@@ -32,9 +32,8 @@ One where description is provided, such as...
   All markdown is supported:
   - a list item
 
-  ```javascript
-  console.log("even code blocks");
-  ```
+  Code blocks are supported
+  (but not shown in this example)
 ```
 
 Since there are a variety of changes (e.g. breaking changes, new features, bug fixes, etc), these changes
