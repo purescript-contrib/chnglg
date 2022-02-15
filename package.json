@@ -1,6 +1,6 @@
 {
   "name": "purs-changelog",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "A maintainer and contributor-friendly tool for generating a human-readable CHANGELOG.md",
   "bin": {
     "purs-changelog": "bin/index.js"
