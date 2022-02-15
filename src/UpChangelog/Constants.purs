@@ -34,6 +34,8 @@ When making a new PR, do the following steps. Each is described in the sections 
 1. Add a new file to this directory where the file name follows the naming convention described below
 1. Fill that file with the proper content
 
+To ensure you're doing it correctly, see the [Checklist](#checklist)
+
 ### File Naming Convention
 
 The file should be named `{PREFIX}_{SLUG}.md`.
