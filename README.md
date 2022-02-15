@@ -14,6 +14,8 @@ To make it easier to keep a good changelog that
 
 ## How
 
+### Receiving PRs
+
 Each PR will add a single file to the `CHANGELOG.d/` directory. Each file will store content in one of two forms:
 
 One where no description is provided, such as...
@@ -47,7 +49,15 @@ are grouped together in the final section for a given release in the `CHANGELOG.
 | `misc`     | Other improvements | anything else that needs to be logged              |
 | `int`      | Internal           | work that doesn't directly affect users of project |
 
+The rest of the file's name is irrelevant for the script, but is often used to summarize things at a glance. For example:
+- `breaking_add-new-function-arg.md`
+- `fix_fix-unclickable-login-button.md`
+- `int_update-ci-to-publish-releases.md`
+- `misc_update-react-dependency.md`
+
 If a PR needs multiple changelog entries for it, it can add multiple files, one for each documented change.
+
+### Making a Release
 
 When the maintainer of the project wants to make a release, they regenerate the `CHANGELOG.md` file by running this script. The script will automatically add the PR number and the GitHub username of the authors of the PR to each file's entry, merge all entries together, and then insert them below the preamble in the `CHANGELOG.md` file.
 
