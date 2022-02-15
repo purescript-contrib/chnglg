@@ -2,12 +2,15 @@ module UpChangelog.Constants where
 
 import Data.String as String
 
+-- | "CHANGELOG.md"
 changelogFile :: String
 changelogFile = "CHANGELOG.md"
 
+-- | "CHANGELOG.d"
 changelogDir :: String
 changelogDir = "CHANGELOG.d"
 
+-- | "README.md"
 readmeFile :: String
 readmeFile = "README.md"
 
