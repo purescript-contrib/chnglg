@@ -24,7 +24,7 @@ One where no description is provided, such as...
 ```
 
 One where description is provided, such as...
-```markdown
+``````markdown
 * A single-line summary of the change made
 
   Here's a more in-depth explanation of the changes made.
@@ -34,9 +34,10 @@ One where description is provided, such as...
   All markdown is supported:
   - a list item
 
-  Code blocks are supported
-  (but not shown in this example)
-```
+  ```javascript
+  console.log("code blocks are supported");
+  ```
+``````
 
 Since there are a variety of changes (e.g. breaking changes, new features, bug fixes, etc), these changes
 are grouped together in the final section for a given release in the `CHANGELOG.md` file. To indicate which kind of change a PR is, each file begins with a special prefix (e.g. `breaking`, `feat`, `fix`, etc.) that indicates where its corresponding group.
