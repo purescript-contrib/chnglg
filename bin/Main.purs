@@ -119,17 +119,19 @@ cliParser =
           # Arg.unformat "PACKAGE_JSON_FILE" validate
         where
         desc = "Uses the `package.json` file's `version` field for the version string in the header in the changelog file."
-        validate = note "File path did not end in `package.json`"
-          <<< map PackageJson
-          <<< String.stripSuffix (Pattern "package.json")
+        validate s = do
+          unless (isJust $ String.stripSuffix (Pattern "package.json") s) do
+            throwError "File path did not end in `package.json`"
+          pure $ PackageJson s
       byCabalFile =
         Arg.argument [ "--cabal", "-c" ] desc
           # Arg.unformat "CABAL_FILE" validate
         where
         desc = "Uses a `*.cabal` file's `version` field for the version string in the header in the changelog file."
-        validate = note "File path did not end in `package.json`"
-          <<< map Cabal
-          <<< String.stripSuffix (Pattern ".cabal")
+        validate s = do
+          unless (isJust $ String.stripSuffix (Pattern ".cabal") s) do
+            throwError "File path did not end in `.cabal`"
+          pure $ Cabal s
       byGitTag =
         Arg.argument [ "--from-git-tag", "-g" ] desc
           # Arg.unformat "CABAL_FILE" (const $ pure FromGitTag)
