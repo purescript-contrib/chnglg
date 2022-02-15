@@ -5,6 +5,7 @@
   , "argonaut-codecs"
   , "argparse-basic"
   , "arrays"
+  , "bifunctors"
   , "console"
   , "control"
   , "datetime"
@@ -30,6 +31,7 @@
   , "prelude"
   , "strings"
   , "tuples"
+  , "versions"
   ]
 , packages = ../packages.dhall
 , sources = [ "src/**/*.purs", "bin/**/*.purs" ]

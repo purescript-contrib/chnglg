@@ -4,6 +4,7 @@
   , "affjax"
   , "argonaut-codecs"
   , "arrays"
+  , "bifunctors"
   , "console"
   , "control"
   , "datetime"
