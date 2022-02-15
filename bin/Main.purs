@@ -5,17 +5,21 @@ import Prelude
 import ArgParse.Basic as Arg
 import Bin.Version (version)
 import Data.Array as Array
-import Data.Either (Either(..))
+import Data.Bifunctor (bimap)
+import Data.Either (Either(..), note)
+import Data.String (Pattern(..), contains)
 import Data.String as String
+import Data.Version as Version
 import Effect (Effect)
-import Effect.Aff (launchAff_)
+import Effect.Aff (launchAff_, throwError)
 import Effect.Class.Console as Console
 import Node.Path (sep)
 import Node.Process as Process
 import UpChangelog.Command.GenChangelog (genChangelog)
 import UpChangelog.Command.InitChangelog (initChangelog)
 import UpChangelog.Constants as Constants
-import UpChangelog.Types (GenChangelogArgs(..))
+import UpChangelog.Types (GenChangelogArgs(..), VersionSource(..))
+import UpChangelog.Utils (breakOn)
 
 main :: Effect Unit
 main = do
@@ -59,10 +63,10 @@ cliParser :: Arg.ArgParser Command
 cliParser =
   Arg.choose "command"
     [ Arg.command [ "regenerate", "r" ] "Regenerates the CHANGELOG.md file based on files in CHANGELOG.d/" ado
-        github <- Arg.fromRecord { owner, repo }
-        packageJson <- packageJsonArg
+        github <- githubRepoArg
+        versionSource <- versionSourceArg
         Arg.flagHelp
-        in GenChangelog (GenChangelogArgs { github, packageJson })
+        in GenChangelog (GenChangelogArgs { github, versionSource })
     , Arg.command [ "init", "i" ] "Sets up the repo so that the `regenerate` command will work in the future." ado
         force <- forceArg
         Arg.flagHelp
@@ -71,17 +75,58 @@ cliParser =
     <* Arg.flagHelp
     <* Arg.flagInfo [ "--version", "-v" ] "Shows the current version" version
   where
-  owner =
-    Arg.argument [ "--owner", "-o" ] "The GitHub repo's owner or username."
-
-  repo =
-    Arg.argument [ "--repo", "-r" ] "The GitHub repo's repo name."
-
-  packageJsonArg =
-    Arg.argument [ "--package-json", "-j" ] desc
-      # Arg.default "package.json"
+  githubRepoArg =
+    Arg.argument [ "--repo", "-r" ] "The Github repo in the `user/repo` format (e.g. `purescript/purescript-prelude`)."
+      # Arg.unformat "OWNER/REPO" validate
     where
-    desc = "The path to the `package.json` file, which is used to get the release's version (defaults to `package.json`)."
+    validate s = do
+      let
+        { before: owner, after: slashRepo } = breakOn (Pattern "/") s
+        repo = String.drop 1 slashRepo
+        check =
+          [ repo /= ""
+          , contains (Pattern "/") repo
+          ]
+
+      when (Array.any identity check) do
+        throwError $ "Expected 'OWNER/REPO' but got '" <> s <> "'"
+      pure { owner, repo }
+
+  versionSourceArg =
+    Arg.choose "version"
+      [ byPackageJson
+      , byCabalFile
+      , byGitTag
+      , byExplicitVersion
+      ]
+      # Arg.default (PackageJson "package.json")
+    where
+    byPackageJson =
+      Arg.argument [ "--package-json", "-j" ] desc
+        # Arg.unformat "PACKAGE_JSON_FILE" validate
+      where
+      desc = "Uses the `package.json` file's `version` field for the version string in the header in the changelog file."
+      validate = note "File path did not end in `package.json`"
+        <<< map PackageJson
+        <<< String.stripSuffix (Pattern "package.json")
+    byCabalFile =
+      Arg.argument [ "--cabal", "-c" ] desc
+        # Arg.unformat "CABAL_FILE" validate
+      where
+      desc = "Uses a `*.cabal` file's `version` field for the version string in the header in the changelog file."
+      validate = note "File path did not end in `package.json`"
+        <<< map Cabal
+        <<< String.stripSuffix (Pattern ".cabal")
+    byGitTag =
+      Arg.argument [ "--git-tag", "-g" ] desc
+        # Arg.unformat "CABAL_FILE" (const $ pure FromGitTag)
+      where
+      desc = "Uses the git tag to which HEAD currently points for the version string in the header in the changelog file."
+    byExplicitVersion =
+      Arg.argument [ "--explicit-release", "-e" ] desc
+        # Arg.unformat "SEMVER_VERSION" (bimap show ExplicitVersion <<< Version.parseVersion)
+      where
+      desc = "Uses the git tag to which HEAD currently points for the version string in the header in the changelog file."
 
   forceArg =
     Arg.flag [ "--force", "-f" ] desc

@@ -12,7 +12,7 @@ import Control.Apply (lift2)
 import Data.Argonaut.Decode (decodeJson, parseJson, printJsonDecodeError)
 import Data.Array as Array
 import Data.Array.NonEmpty as NEA
-import Data.Either (Either(..), hush)
+import Data.Either (Either(..), either, hush)
 import Data.Formatter.DateTime (unformat)
 import Data.HTTP.Method (Method(..))
 import Data.Int as Int
@@ -24,24 +24,27 @@ import Data.RFC3339String.Format (iso8601Format)
 import Data.String (Pattern(..), toLower)
 import Data.String as String
 import Data.Traversable (for, traverse)
+import Data.Traversable as Foldable
 import Data.Tuple (Tuple(..), fst, snd)
+import Data.Version (Version, showVersion)
+import Data.Version as Version
 import Effect.Aff (Aff)
 import Effect.Aff.Class (liftAff)
 import Effect.Class (liftEffect)
 import Effect.Exception (throw)
 import Node.Encoding (Encoding(..))
 import Node.FS.Aff as FSA
-import Node.Path (FilePath, sep)
+import Node.Path (sep)
 import Node.Path as Path
 import Node.Process as Process
 import Partial.Unsafe (unsafeCrashWith)
 import UpChangelog.Constants as Constants
 import UpChangelog.Git (git)
-import UpChangelog.Types (ChangelogEntry(..), GenChangelogArgs(..), CommitType(..), GitLogCommit(..), GHOwnerRepo)
+import UpChangelog.Types (ChangelogEntry(..), CommitType(..), GHOwnerRepo, GenChangelogArgs(..), GitLogCommit(..), VersionSource(..))
 import UpChangelog.Utils (breakOn, breakOnEnd, breakOnSpace, lines, toUtcDate, wrapQuotes)
 
 genChangelog :: GenChangelogArgs -> Aff Unit
-genChangelog (GenChangelogArgs { github, packageJson }) = do
+genChangelog (GenChangelogArgs { github, versionSource }) = do
   git "rev-parse" [ "--show-toplevel" ] >>= liftEffect <<< Process.chdir <<< String.trim <<< _.stdout
   entries <- (lines <<< _.stdout) <$> git "ls-tree" [ "--name-only", "HEAD", Constants.changelogDir <> sep ]
 
@@ -61,7 +64,7 @@ genChangelog (GenChangelogArgs { github, packageJson }) = do
       "You have uncommitted changes to changelog files. " <>
         "Please commit, stash, or revert them before running this script."
 
-    version <- getVersion packageJson
+    version <- getVersion versionSource
     { before: changelogPreamble
     , after: changelogRest
     } <- breakOn (Pattern "\n## ") <$> FSA.readTextFile UTF8 Constants.changelogFile
@@ -199,17 +202,61 @@ commaSeparate = case _ of
     | Just { init, last } <- Array.unsnoc more -> String.joinWith ", " init <> ", and " <> last
     | otherwise -> unsafeCrashWith "This is not possible"
 
-getVersion :: FilePath -> Aff String
-getVersion packageJsonPath = do
-  unlessM (FSA.exists packageJsonPath) do
-    liftEffect $ throw
-      $ "`package.json` file was not found using path '" <> packageJsonPath <> "'. Cannot use it to get the version."
-  content <- liftAff $ FSA.readTextFile UTF8 packageJsonPath
-  case parseJson content >>= decodeJson of
-    Left e -> do
-      liftEffect $ throw $ "Error in getVersion: " <> printJsonDecodeError e
-    Right (rec :: { version :: String }) -> do
-      pure rec.version
+getVersion :: VersionSource -> Aff String
+getVersion = case _ of
+  PackageJson packageJsonPath -> do
+    unlessM (FSA.exists packageJsonPath) do
+      liftEffect $ throw
+        $ "`package.json` file was not found using path '" <> packageJsonPath <> "'. Cannot use it to get the version."
+    content <- liftAff $ FSA.readTextFile UTF8 packageJsonPath
+    case parseJson content >>= decodeJson of
+      Left e -> do
+        liftEffect $ throw $ "Error in getVersion: " <> printJsonDecodeError e
+      Right (rec :: { version :: String }) -> do
+        pure rec.version
+  ExplicitVersion version -> do
+    pure $ showVersion version
+  FromGitTag -> do
+    mbVersion <- getVersionFromGitTag
+    case mbVersion of
+      Nothing -> do
+        liftEffect $ throw $ "Error in getVersion for `FromGitTag` case: did not get a tag. Is HEAD pointing to a tag?"
+      Just version -> do
+        pure version
+  Cabal filePath -> do
+    unlessM (FSA.exists filePath) do
+      liftEffect $ throw
+        $ "A `*.cabal` file was not found using path '" <> filePath <> "'. Cannot use it to get the version."
+    content <- liftAff $ FSA.readTextFile UTF8 filePath
+    case Array.findMap (String.stripPrefix (Pattern "version:")) $ lines content of
+      Nothing -> do
+        liftEffect $ throw $ "Error in getVersion for `Cabal` case: did not find a line with content: `version: <versionString>`."
+      Just versionStr -> do
+        pure $ String.trim versionStr
+
+  where
+  -- | Get the version tag pointing to the currently checked out commit, if any.
+  -- | The tag must start with a "v" and be followed by a valid semver version,
+  -- | for example "v1.2.3".
+  -- |
+  -- | If multiple tags point to the checked out commit, return the latest
+  -- | version according to semver version comparison.
+  getVersionFromGitTag :: Aff (Maybe String)
+  getVersionFromGitTag = do
+    output <- git "tag" [ "--points-at", "HEAD" ]
+    pure $ map Version.showVersion $ maxVersion output.stdout
+    where
+    maxVersion :: String -> Maybe Version
+    maxVersion =
+      lines
+        >>> Array.mapMaybe (String.trim >>> parseMay)
+        >>> Foldable.maximum
+
+    parseMay str =
+      either (const Nothing) Just
+        $ Version.parseVersion
+        $ _.after
+        $ breakOn (Pattern "v") str
 
 conditionalSection :: String -> Array ChangelogEntry -> String
 conditionalSection header = case _ of

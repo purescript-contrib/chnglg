@@ -5,13 +5,24 @@ import Prelude
 import Data.Argonaut.Decode (class DecodeJson, decodeJson)
 import Data.DateTime (DateTime)
 import Data.Newtype (class Newtype)
+import Data.Version as Version
 import Node.Path (FilePath)
 
 type GHOwnerRepo = { owner :: String, repo :: String }
 
+data VersionSource
+  = PackageJson FilePath
+  | Cabal FilePath
+  | ExplicitVersion Version.Version
+  | FromGitTag
+
+-- | PursJson FilePath -- support in future
+derive instance Eq VersionSource
+derive instance Ord VersionSource
+
 newtype GenChangelogArgs = GenChangelogArgs
   { github :: GHOwnerRepo
-  , packageJson :: FilePath
+  , versionSource :: VersionSource
   }
 
 newtype ChangelogEntry = ChangelogEntry

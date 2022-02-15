@@ -29,6 +29,7 @@
   , "prelude"
   , "strings"
   , "tuples"
+  , "versions"
   ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs" ]
