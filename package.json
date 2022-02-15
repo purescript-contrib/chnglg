@@ -28,5 +28,8 @@
   "bugs": {
     "url": "https://github.com/jordanmartinez/purescript-up-changelog/issues"
   },
-  "homepage": "https://github.com/jordanmartinez/purescript-up-changelog#readme"
+  "homepage": "https://github.com/jordanmartinez/purescript-up-changelog#readme",
+  "dependencies": {
+    "xhr2": "^0.2.1"
+  }
 }
