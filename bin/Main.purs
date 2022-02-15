@@ -10,9 +10,11 @@ import Data.String as String
 import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Effect.Class.Console as Console
+import Node.Path (sep)
 import Node.Process as Process
 import UpChangelog.Command.GenChangelog (genChangelog)
 import UpChangelog.Command.InitChangelog (initChangelog)
+import UpChangelog.Constants as Constants
 import UpChangelog.Types (GenChangelogArgs(..))
 
 main :: Effect Unit
@@ -33,11 +35,11 @@ main = do
         GenChangelog options -> do
           launchAff_ $ genChangelog options
 
-        InitChangelog -> do
-          launchAff_ $ initChangelog
+        InitChangelog force -> do
+          launchAff_ $ initChangelog force
 
 data Command
-  = InitChangelog
+  = InitChangelog Boolean
   | GenChangelog GenChangelogArgs
 
 parseCliArgs :: Array String -> Either Arg.ArgError Command
@@ -61,8 +63,10 @@ cliParser =
         packageJson <- packageJsonArg
         Arg.flagHelp
         in GenChangelog (GenChangelogArgs { github, packageJson })
-    , Arg.command [ "init", "i" ] "Sets up the repo so that the `regenerate` command will work in the future." do
-        InitChangelog <$ Arg.flagHelp
+    , Arg.command [ "init", "i" ] "Sets up the repo so that the `regenerate` command will work in the future." ado
+        force <- forceArg
+        Arg.flagHelp
+        in InitChangelog force
     ]
     <* Arg.flagHelp
     <* Arg.flagInfo [ "--version", "-v" ] "Shows the current version" version
@@ -76,3 +80,9 @@ cliParser =
   packageJsonArg =
     Arg.argument [ "--package-json", "-j" ] "The path to the `package.json` file (defaults to `package.json`)."
       # Arg.default "package.json"
+
+  forceArg =
+    Arg.flag [ "--force", "-f" ] desc
+      # Arg.boolean
+    where
+    desc = "When enabled, overwrites the " <> Constants.changelogDir <> sep <> Constants.readmeFile <> " file if it exists."
