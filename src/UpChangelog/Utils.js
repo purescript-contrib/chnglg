@@ -1,4 +1,3 @@
-
 exports.toUtcDate = (str) => {
   try {
     // quick and dirty way to convert date to UTC
