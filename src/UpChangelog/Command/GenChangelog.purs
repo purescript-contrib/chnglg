@@ -93,7 +93,7 @@ processEntriesStartingWith ownerRepo prefix =
 
 updateEntry :: GHOwnerRepo -> String -> Aff ChangelogEntry
 updateEntry ownerRepo file = do
-  { before: header, after: body } <- map (breakOnSpace <<< String.trim) $ (FSA.readTextFile UTF8 <<< Path.normalize) file
+  { before: header, after: body } <- map (breakOn (Pattern "\n") <<< String.trim) $ (FSA.readTextFile UTF8 <<< Path.normalize) file
 
   allCommits <- do
     -- 2c78eb614cb1f3556737900e57d0e7395158791e 2021-11-17T13:27:33-08:00 Title of PR (#4121)
