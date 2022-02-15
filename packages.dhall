@@ -3,3 +3,22 @@ let upstream =
         sha256:f8905bf5d7ce9d886cf4ef1c5893ab55de0b30c82c2b4137f272d075000fbc50
 
 in  upstream
+  with argparse-basic =
+    { dependencies =
+      [ "arrays"
+      , "console"
+      , "debug"
+      , "effect"
+      , "either"
+      , "foldable-traversable"
+      , "free"
+      , "lists"
+      , "maybe"
+      , "node-process"
+      , "record"
+      , "strings"
+      , "transformers"
+      ]
+    , repo = "https://github.com/natefaubion/purescript-argparse-basic.git"
+    , version = "v1.0.0"
+    }
