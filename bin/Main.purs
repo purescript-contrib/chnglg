@@ -12,6 +12,7 @@ import Effect.Aff (launchAff_)
 import Effect.Class.Console as Console
 import Node.Process as Process
 import UpChangelog.Command.GenChangelog (genChangelog)
+import UpChangelog.Command.InitChangelog (initChangelog)
 import UpChangelog.Types (GenChangelogArgs(..))
 
 main :: Effect Unit
@@ -33,7 +34,7 @@ main = do
           launchAff_ $ genChangelog options
 
         InitChangelog -> do
-          pure unit
+          launchAff_ $ initChangelog
 
 data Command
   = InitChangelog
