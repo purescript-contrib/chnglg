@@ -90,7 +90,9 @@ CHANGELOG.d/breaking_add-new-function-arg.md
 CHANGELOG.md
 # Changelog
 
-Notable changes to this project are documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+Notable changes to this project are documented in this file.
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## 1.0.0
 
@@ -102,7 +104,9 @@ this script will modify `CHANGELOG.md` to the following
 ```markdown
 # Changelog
 
-Notable changes to this project are documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+Notable changes to this project are documented in this file.
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## 2.0.0
 
