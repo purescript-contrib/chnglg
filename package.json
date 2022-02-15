@@ -12,6 +12,7 @@
   "scripts": {
     "build": "spago -x bin/spago.dhall build",
     "bundle": "npm run build && spago -x bin/spago.dhall bundle-app --to './bundle/Main/index.js' --no-build",
+    "test": "echo \"No tests have been written yet\"",
     "format": "purs-tidy format-in-place src bin",
     "prepublishOnly": "rm -rf output bundle && npm run bundle"
   },
