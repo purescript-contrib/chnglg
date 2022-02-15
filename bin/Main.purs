@@ -12,6 +12,7 @@ import Effect.Class.Console as Console
 import Node.Process as Process
 import UpChangelog.Command.GenChangelog (genChangelog)
 import UpChangelog.Types (GenChangelogArgs(..))
+import Bin.Version (version)
 
 main :: Effect Unit
 main = do
@@ -61,6 +62,8 @@ cliParser = Arg.choose "command"
   , Arg.command [ "init", "i" ] "Sets up the repo so that the `regenerate` command will work in the future." do
       InitChangelog <$ Arg.flagHelp
   ]
+  <* Arg.flagHelp
+  <* Arg.flagInfo [ "--version", "-v" ] "Shows the current version" version
   where
   owner =
     Arg.argument [ "--owner", "-o" ] "The GitHub repo's owner or username."
