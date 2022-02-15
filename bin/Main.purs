@@ -3,6 +3,7 @@ module Main where
 import Prelude
 
 import ArgParse.Basic as Arg
+import Bin.Version (version)
 import Data.Array as Array
 import Data.Either (Either(..))
 import Data.String as String
@@ -12,7 +13,6 @@ import Effect.Class.Console as Console
 import Node.Process as Process
 import UpChangelog.Command.GenChangelog (genChangelog)
 import UpChangelog.Types (GenChangelogArgs(..))
-import Bin.Version (version)
 
 main :: Effect Unit
 main = do
@@ -53,17 +53,18 @@ parseCliArgs = Arg.parseArgs
   cliParser
 
 cliParser :: Arg.ArgParser Command
-cliParser = Arg.choose "command"
-  [ Arg.command [ "regenerate", "r" ] "Regenerates the CHANGELOG.md file based on files in CHANGELOG.d/" ado
-      github <- Arg.fromRecord { owner, repo }
-      packageJson <- packageJsonArg
-      Arg.flagHelp
-      in GenChangelog (GenChangelogArgs { github, packageJson })
-  , Arg.command [ "init", "i" ] "Sets up the repo so that the `regenerate` command will work in the future." do
-      InitChangelog <$ Arg.flagHelp
-  ]
-  <* Arg.flagHelp
-  <* Arg.flagInfo [ "--version", "-v" ] "Shows the current version" version
+cliParser =
+  Arg.choose "command"
+    [ Arg.command [ "regenerate", "r" ] "Regenerates the CHANGELOG.md file based on files in CHANGELOG.d/" ado
+        github <- Arg.fromRecord { owner, repo }
+        packageJson <- packageJsonArg
+        Arg.flagHelp
+        in GenChangelog (GenChangelogArgs { github, packageJson })
+    , Arg.command [ "init", "i" ] "Sets up the repo so that the `regenerate` command will work in the future." do
+        InitChangelog <$ Arg.flagHelp
+    ]
+    <* Arg.flagHelp
+    <* Arg.flagInfo [ "--version", "-v" ] "Shows the current version" version
   where
   owner =
     Arg.argument [ "--owner", "-o" ] "The GitHub repo's owner or username."
