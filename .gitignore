@@ -9,4 +9,4 @@
 /.purs*
 /.psa*
 /.spago
-up-changelog.js
+/bin/index.js
