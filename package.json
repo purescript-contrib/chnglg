@@ -10,8 +10,9 @@
   ],
   "scripts": {
     "build": "spago -x bin/spago.dhall build",
+    "bundle:spago": "spago -x bin/spago.dhall bundle-app -m Main -t bundle/Main/index.js",
     "bundle:esbuild": "esbuild --bundle --outfile=bin/index.js --platform=node --minify --charset=utf8 bundle/Main/index.js",
-    "bundle": "npm run build && npm run bundle:esbuild",
+    "bundle": "npm run build && npm run bundle:spago && npm run bundle:esbuild",
     "test": "echo \"No tests have been written yet\"",
     "format": "purs-tidy format-in-place src bin",
     "prepublishOnly": "rm -rf output bundle && npm run bundle"
