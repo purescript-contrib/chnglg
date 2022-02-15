@@ -158,7 +158,10 @@ parsePRNumber = lift2 (<|>) parseMerge parseSquash
     map (Tuple MergeCommit) $ Int.fromString $ _.before $ breakOnSpace res
 
   parseSquash s = do
-    res <- String.stripSuffix (Pattern ")") $ _.after $ breakOnEnd (Pattern "(#") s
+    res <- String.stripSuffix (Pattern ")")
+      $ String.drop 2 -- (#
+      $ _.after
+      $ breakOnEnd (Pattern "(#") s
     map (Tuple SquashCommit) $ Int.fromString res
 
 -- | This function helps us exclude PRs that are just fixups of changelog
