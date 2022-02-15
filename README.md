@@ -68,7 +68,7 @@ If a PR needs multiple changelog entries for it, it can add multiple files, one 
 
 ### Making a Release
 
-When the maintainer of the project wants to make a release, they regenerate the `CHANGELOG.md` file by running this script. The script will automatically add the PR number and the GitHub username of the authors of the PR to each file's entry, merge all entries together, and then insert them below the preamble in the `CHANGELOG.md` file.
+When the maintainer of the project wants to make a release, they update the `CHANGELOG.md` file by running this script (e.g. `purs-changelog update --repo owner/repo`). The script will automatically add the PR number and the GitHub username of the authors of the PR to each file's entry, merge all entries together, and then insert them below the preamble in the `CHANGELOG.md` file.
 
 For example, given the following files
 ```

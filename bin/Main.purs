@@ -54,7 +54,7 @@ parseCliArgs = Arg.parseArgs
       , ""
       , "Examples:"
       , "  purs-changelog init"
-      , "  purs-changelog regenerate --owner purescript --repo prelude"
+      , "  purs-changelog update --repo purescript/purescript-prelude"
       ]
   )
   cliParser
@@ -62,8 +62,8 @@ parseCliArgs = Arg.parseArgs
 cliParser :: Arg.ArgParser Command
 cliParser =
   Arg.choose "command"
-    [ regenerateCommand
-    , Arg.command [ "init", "i" ] "Sets up the repo so that the `regenerate` command will work in the future." ado
+    [ updateCommand
+    , Arg.command [ "init", "i" ] "Sets up the repo so that the `update` command will work in the future." ado
         force <- forceArg
         Arg.flagHelp
         in InitChangelog force
@@ -71,22 +71,22 @@ cliParser =
     <* Arg.flagHelp
     <* Arg.flagInfo [ "--version", "-v" ] "Shows the current version" version
   where
-  regenerateCommand =
-    Arg.command [ "regenerate", "r" ] cmdDesc ado
+  updateCommand =
+    Arg.command [ "update", "u" ] cmdDesc ado
       github <- githubRepoArg
       versionSource <- versionSourceArg
       Arg.flagHelp
       in GenChangelog (GenChangelogArgs { github, versionSource })
     where
     cmdDesc = joinWith "\n"
-      [ "Regenerates the CHANGELOG.md file based on files in CHANGELOG.d/"
+      [ "Updates the CHANGELOG.md file with a new releae entry based on files in CHANGELOG.d/"
       , ""
       , "Examples:"
-      , "purs-changelog regenerate --repo purescript/purescript-prelude"
-      , "purs-changelog regenerate --repo purescript/purescript --package-json npm-package/package.json"
-      , "purs-changelog regenerate --repo purescript/spago --cabal spago.cabal"
-      , "purs-changelog regenerate --repo owner/repo --from-git-tag"
-      , "purs-changelog regenerate --repo owner/repo --explicit-release v1.2.3"
+      , "purs-changelog update --repo purescript/purescript-prelude"
+      , "purs-changelog update --repo purescript/purescript --package-json npm-package/package.json"
+      , "purs-changelog update --repo purescript/spago --cabal spago.cabal"
+      , "purs-changelog update --repo owner/repo --from-git-tag"
+      , "purs-changelog update --repo owner/repo --explicit-release v1.2.3"
       ]
     githubRepoArg =
       Arg.argument [ "--repo", "-r" ] "The Github repo in the `user/repo` format (e.g. `purescript/purescript-prelude`)."
