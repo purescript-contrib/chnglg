@@ -103,8 +103,8 @@ Use this checklist to help you remember to do everything described above.
 - [ ] A new file has been added to `CHANGELOG.d`
 - [ ] The file name starts with one of the `{PREFIX}` values above.
 - [ ] The file's content does not reference the PR number that introduces it
-- [ ] The file's first line starts with `* ` followed by short content
-- If the file contains any additional content:
-    - [ ] the file has a blank line separating the title part from the body part
+- [ ] The file's first line (i.e. title line) starts with `* ` followed by a short description
+- If the file contains content after the first line (i.e. body part):
+    - [ ] the file has a blank line separating the title line from the body part
     - [ ] each line in the body part is indented by at least two spaces
 """
