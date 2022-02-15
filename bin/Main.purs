@@ -78,8 +78,10 @@ cliParser =
     Arg.argument [ "--repo", "-r" ] "The GitHub repo's repo name."
 
   packageJsonArg =
-    Arg.argument [ "--package-json", "-j" ] "The path to the `package.json` file (defaults to `package.json`)."
+    Arg.argument [ "--package-json", "-j" ] desc
       # Arg.default "package.json"
+    where
+    desc = "The path to the `package.json` file, which is used to get the release's version (defaults to `package.json`)."
 
   forceArg =
     Arg.flag [ "--force", "-f" ] desc
