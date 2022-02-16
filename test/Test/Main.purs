@@ -8,7 +8,7 @@ import Data.Foldable (for_)
 import Data.Maybe (isJust, isNothing)
 import Data.String as String
 import Effect (Effect)
-import Effect.Aff (Aff, runAff_)
+import Effect.Aff (Aff, joinFiber, launchAff_, runAff, runAff_)
 import Effect.Class (liftEffect)
 import Effect.Class.Console (log)
 import Effect.Exception (throwException)
@@ -18,7 +18,7 @@ import Node.FS.Aff as FSA
 import Node.Path (FilePath, sep)
 import Node.Path as Path
 import Node.Process (chdir, cwd)
-import Test.Spec (SpecT, describe, it)
+import Test.Spec (SpecT, describe, describeOnly, it)
 import Test.Spec.Assertions (shouldEqual, shouldSatisfy)
 import Test.Spec.Reporter (consoleReporter)
 import Test.Spec.Runner (defaultConfig, runSpecT)
@@ -112,7 +112,7 @@ spec = do
         { error: error2 } <- pursChangelog "init" [ "--force", "--changelog-dir", dir, "--changelog-file", file ]
         error2 `shouldSatisfy` isNothing
 
-  describe "Update command" do
+  describeOnly "Update command" do
     liftEffect $ chdir "project"
     let
       repoArg = "jordanmartinez/purescript-up-changelog"
@@ -121,14 +121,21 @@ spec = do
 
       withReset' :: FilePath -> FilePath -> Aff Unit -> Aff Unit
       withReset' changeDir changeFile f = do
-        res <- f
-        { stdout } <- runCmd defaultExecOptions "git" [ "branch" ]
-        let
-          { after } = breakOnSpace stdout
-          branchName = String.drop 1 after
-          entries = map wrapQuotes [ changeDir <> sep, changeFile ]
-        void $ runCmd defaultExecOptions "git" $ [ "checkout", branchName, "--" ] <> entries
+        fiber <- liftEffect $ runAff (either resetRethrow pure) f
+        res <- joinFiber fiber
+        reset
         pure res
+        where
+        resetRethrow e = launchAff_ do
+          reset
+          void $ liftEffect $ throwException e
+        reset = do
+          { stdout } <- runCmd defaultExecOptions "git" [ "branch" ]
+          let
+            { after } = breakOnSpace stdout
+            branchName = String.drop 1 after
+            entries = map wrapQuotes [ changeDir <> sep, changeFile ]
+          void $ runCmd defaultExecOptions "git" $ [ "checkout", branchName, "--" ] <> entries
 
     it "update - no args - produces expected content" do
       withReset do
