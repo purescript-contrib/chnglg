@@ -145,11 +145,32 @@ spec = do
         expectedContent <- readFile correctFile
         logContent `shouldEqual` expectedContent
 
-    it "update - package.json version - produces expected content" do
-      pure unit
+    it "update - version via package.json - produces expected content" do
+      withReset do
+        { error } <- pursChangelog "update" [ "--repo", repoArg, "--package-json", "package.json" ]
+        error `shouldSatisfy` isNothing
+        files <- readDir Constants.changelogDir
+        files `shouldEqual` [ Constants.readmeFile ]
+        logContent <- readFile Constants.changelogFile
+        expectedContent <- readFile correctFile
+        logContent `shouldEqual` expectedContent
 
     it "update - explicit version - produces expected content" do
-      pure unit
+      withReset do
+        { error } <- pursChangelog "update" [ "--repo", repoArg, "--explicit-release", "1.2.3" ]
+        error `shouldSatisfy` isNothing
+        files <- readDir Constants.changelogDir
+        files `shouldEqual` [ Constants.readmeFile ]
+        logContent <- readFile Constants.changelogFile
+        expectedContent <- readFile correctFile
+        logContent `shouldEqual` expectedContent
 
     it "update - proj.cabal version - produces expected content" do
-      pure unit
+      withReset do
+        { error } <- pursChangelog "update" [ "--repo", repoArg, "--cabal", "proj.cabal" ]
+        error `shouldSatisfy` isNothing
+        files <- readDir Constants.changelogDir
+        files `shouldEqual` [ Constants.readmeFile ]
+        logContent <- readFile Constants.changelogFile
+        expectedContent <- readFile correctFile
+        logContent `shouldEqual` expectedContent
