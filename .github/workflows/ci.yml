@@ -6,7 +6,8 @@ on:
   pull_request:
 
 defaults:
-  shell: bash
+  run:
+    shell: bash
 
 jobs:
   build:
