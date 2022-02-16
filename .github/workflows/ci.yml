@@ -42,34 +42,14 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Build source (non-Windows)
-        if: matrix.os != windows-latest
+      - name: Build source
         run: npm run build
 
-      - name: Build source (Windows only)
-        if: matrix.os == windows-latest
-        run: npm run build:win
-
-      - name: Build bin (non-Windows)
-        if: matrix.os != windows-latest
+      - name: Build bin
         run: npm run bundle
 
-      - name: Build bin (Windows only)
-        if: matrix.os == windows-latest
-        run: npm run bundle
-
-      - name: "Run tests (non-Windows)"
-        if: matrix.os != windows-latest
+      - name: "Run tests"
         run: npm run test:ci
 
-      - name: "Run tests (Windows only"
-        if: matrix.os == windows-latest
-        run: npm run test:ci:win
-
       - name: Verify formatting
-        if: matrix.os != windows-latest
         run: npm run check
-
-      - name: Verify formatting
-        if: matrix.os == windows-latest
-        run: npm run check:win
