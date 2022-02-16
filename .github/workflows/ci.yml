@@ -5,6 +5,9 @@ on:
     branches: [master]
   pull_request:
 
+defaults:
+  shell: bash
+
 jobs:
   build:
     strategy:
