@@ -16,7 +16,7 @@ import Node.FS.Aff as FSA
 import Node.Path (FilePath, sep)
 import Node.Path as Path
 import Node.Process (chdir)
-import Test.Spec (SpecT, describe, it)
+import Test.Spec (SpecT, describe, it, sequential)
 import Test.Spec.Assertions (shouldEqual, shouldSatisfy)
 import Test.Spec.Reporter (consoleReporter)
 import Test.Spec.Runner (defaultConfig, runSpecT)
@@ -26,7 +26,7 @@ import UpChangelog.Utils (breakOnSpace, wrapQuotes)
 
 main :: Effect Unit
 main = runAff_ (either throwException pure) do
-  void $ join $ runSpecT defaultConfig [ consoleReporter ] spec
+  void $ join $ runSpecT defaultConfig [ consoleReporter ] $ sequential spec
 
 spec :: SpecT Aff Unit Aff Unit
 spec = do
