@@ -2,6 +2,8 @@
 
 A port of the work done in [`purescript/purescript#4392`](https://github.com/purescript/purescript/pull/4132). Ports the `update-changelog.hs` script from Haskell to PureScript.
 
+![ci badge](https://github.com/jordanmartinez/purescript-up-changelog/actions/workflows/ci.yml/badge.svg)
+
 ## Install
 
 The first working release is `v0.1.5`.
