@@ -11,7 +11,7 @@ import Node.Encoding (Encoding(..))
 import Node.FS.Aff as FSA
 import Node.Path (FilePath, sep)
 import Node.Path as Path
-import UpChangelog.Command.GenChangelog (commaSeparate)
+import UpChangelog.Command.Update (commaSeparate)
 import UpChangelog.Constants as Constants
 import UpChangelog.Git (git)
 import UpChangelog.Types (InitArgs(..))

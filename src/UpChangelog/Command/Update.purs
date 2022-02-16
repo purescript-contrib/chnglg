@@ -1,4 +1,4 @@
-module UpChangelog.Command.GenChangelog where
+module UpChangelog.Command.Update where
 
 import Prelude
 
@@ -39,11 +39,11 @@ import Node.Path as Path
 import Node.Process as Process
 import Partial.Unsafe (unsafeCrashWith)
 import UpChangelog.Git (git)
-import UpChangelog.Types (ChangelogEntry(..), CommitType(..), GHOwnerRepo, GenChangelogArgs(..), GitLogCommit(..), VersionSource(..))
+import UpChangelog.Types (ChangelogEntry(..), CommitType(..), GHOwnerRepo, UpdateArgs(..), GitLogCommit(..), VersionSource(..))
 import UpChangelog.Utils (breakOn, breakOnEnd, breakOnSpace, lines, toUtcDate, wrapQuotes)
 
-genChangelog :: GenChangelogArgs -> Aff Unit
-genChangelog (GenChangelogArgs { github, versionSource, changelogFile, changelogDir }) = do
+update :: UpdateArgs -> Aff Unit
+update (UpdateArgs { github, versionSource, changelogFile, changelogDir }) = do
   git "rev-parse" [ "--show-toplevel" ] >>= liftEffect <<< Process.chdir <<< String.trim <<< _.stdout
   entries <- (lines <<< _.stdout) <$> git "ls-tree" [ "--name-only", "HEAD", changelogDir <> sep ]
 
