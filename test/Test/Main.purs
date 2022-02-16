@@ -135,7 +135,7 @@ spec = do
         { error } <- pursChangelog "update" [ "--repo", repoArg ]
         error `shouldSatisfy` isNothing
         files <- readDir Constants.changelogDir
-        files `shouldSatisfy` Array.null
+        files `shouldEqual` [ Constants.readmeFile ]
         logContent <- readFile Constants.changelogFile
         expectedContent <- readFile correctFile
         logContent `shouldEqual` expectedContent
