@@ -39,16 +39,16 @@ main = do
           Process.exit 1
     Right cmd ->
       case cmd of
-        GenChangelog options -> do
+        GenChangelog options@(GenChangelogArgs opts) -> do
           launchAff_ do
-            dirExists <- FSA.exists Constants.changelogDir
+            dirExists <- FSA.exists opts.changelogDir
             if not $ dirExists then do
-              Console.log $ "Cannot update changelog file as '" <> Constants.changelogDir <> "' does not exist."
+              Console.log $ "Cannot update changelog file as '" <> opts.changelogDir <> "' does not exist."
               liftEffect $ Process.exit 1
             else do
-              entries <- FSA.readdir Constants.changelogDir
+              entries <- FSA.readdir opts.changelogDir
               if Array.null entries then do
-                Console.log $ "Cannot update changelog file as there are no files in '" <> Constants.changelogDir <> "."
+                Console.log $ "Cannot update changelog file as there are no files in '" <> opts.changelogDir <> "."
                 liftEffect $ Process.exit 1
               else do
                 genChangelog options
@@ -89,11 +89,13 @@ cliParser =
     Arg.command [ "update", "u" ] cmdDesc ado
       github <- githubRepoArg
       versionSource <- versionSourceArg
+      changelogFile <- changelogFileArg
+      changelogDir <- changelogDirArg
       Arg.flagHelp
-      in GenChangelog (GenChangelogArgs { github, versionSource })
+      in GenChangelog (GenChangelogArgs { github, versionSource, changelogFile, changelogDir })
     where
     cmdDesc = joinWith "\n"
-      [ "Updates the CHANGELOG.md file with a new releae entry based on files in CHANGELOG.d/"
+      [ "Updates the changelog file with a new releae entry based on files in the changelog directory"
       , ""
       , "Examples:"
       , "purs-changelog update --repo purescript/purescript-prelude"
@@ -156,6 +158,18 @@ cliParser =
           # Arg.unformat "SEMVER_VERSION" (bimap show ExplicitVersion <<< Version.parseVersion)
         where
         desc = "Uses the git tag to which HEAD currently points for the version string in the header in the changelog file."
+
+    changelogFileArg =
+      Arg.argument [ "--changelog-file" ] desc
+        # Arg.default Constants.changelogFile
+      where
+      desc = "The file path to the changelog file. (defaults to `" <> Constants.changelogFile <> "`)"
+
+    changelogDirArg =
+      Arg.argument [ "--changelog-dir" ] desc
+        # Arg.default Constants.changelogDir
+      where
+      desc = "The file path to the directory containing changelog entry files. (defaults to `" <> Constants.changelogDir <> "`)"
 
   forceArg =
     Arg.flag [ "--force", "-f" ] desc

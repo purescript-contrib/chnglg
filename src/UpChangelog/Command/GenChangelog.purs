@@ -38,15 +38,14 @@ import Node.Path (sep)
 import Node.Path as Path
 import Node.Process as Process
 import Partial.Unsafe (unsafeCrashWith)
-import UpChangelog.Constants as Constants
 import UpChangelog.Git (git)
 import UpChangelog.Types (ChangelogEntry(..), CommitType(..), GHOwnerRepo, GenChangelogArgs(..), GitLogCommit(..), VersionSource(..))
 import UpChangelog.Utils (breakOn, breakOnEnd, breakOnSpace, lines, toUtcDate, wrapQuotes)
 
 genChangelog :: GenChangelogArgs -> Aff Unit
-genChangelog (GenChangelogArgs { github, versionSource }) = do
+genChangelog (GenChangelogArgs { github, versionSource, changelogFile, changelogDir }) = do
   git "rev-parse" [ "--show-toplevel" ] >>= liftEffect <<< Process.chdir <<< String.trim <<< _.stdout
-  entries <- (lines <<< _.stdout) <$> git "ls-tree" [ "--name-only", "HEAD", Constants.changelogDir <> sep ]
+  entries <- (lines <<< _.stdout) <$> git "ls-tree" [ "--name-only", "HEAD", changelogDir <> sep ]
 
   let processEntriesStartingWith' = processEntriesStartingWith github
 
@@ -58,10 +57,10 @@ genChangelog (GenChangelogArgs { github, versionSource }) = do
 
   let entryFiles = (_.file <<< unwrap) <$> breaks <> features <> fixes <> internal <> misc
   if (Array.null entryFiles) then do
-    liftEffect $ throw $ "Cannot update changelog file as there aren't any valid entries in '" <> Constants.changelogDir <> "'."
+    liftEffect $ throw $ "Cannot update changelog file as there aren't any valid entries in '" <> changelogDir <> "'."
   else do
 
-    changes <- git "status" $ [ "-s", "--" ] <> (map wrapQuotes $ Array.cons Constants.changelogFile entryFiles)
+    changes <- git "status" $ [ "-s", "--" ] <> (map wrapQuotes $ Array.cons changelogFile entryFiles)
     unless (changes.stdout == "") $ liftEffect $ throw $
       "You have uncommitted changes to changelog files. " <>
         "Please commit, stash, or revert them before running this script."
@@ -69,8 +68,8 @@ genChangelog (GenChangelogArgs { github, versionSource }) = do
     version <- getVersion versionSource
     { before: changelogPreamble
     , after: changelogRest
-    } <- breakOn (Pattern "\n## ") <$> FSA.readTextFile UTF8 Constants.changelogFile
-    FSA.writeTextFile UTF8 Constants.changelogFile $
+    } <- breakOn (Pattern "\n## ") <$> FSA.readTextFile UTF8 changelogFile
+    FSA.writeTextFile UTF8 changelogFile $
       changelogPreamble
         <> "\n## "
         <> version
@@ -82,7 +81,7 @@ genChangelog (GenChangelogArgs { github, versionSource }) = do
         <> conditionalSection "Internal" internal
         <> changelogRest
 
-    void $ git "add" [ Constants.changelogFile ]
+    void $ git "add" [ changelogFile ]
     void $ git "rm" $ Array.cons "-q" $ map wrapQuotes entryFiles
 
 processEntriesStartingWith :: GHOwnerRepo -> String -> Array String -> Aff (Array ChangelogEntry)

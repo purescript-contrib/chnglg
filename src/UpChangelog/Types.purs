@@ -23,6 +23,8 @@ derive instance Ord VersionSource
 newtype GenChangelogArgs = GenChangelogArgs
   { github :: GHOwnerRepo
   , versionSource :: VersionSource
+  , changelogFile :: FilePath
+  , changelogDir :: FilePath
   }
 
 newtype ChangelogEntry = ChangelogEntry
