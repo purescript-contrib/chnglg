@@ -21,7 +21,7 @@ import Node.Process as Process
 import UpChangelog.Command.GenChangelog (genChangelog)
 import UpChangelog.Command.InitChangelog (initChangelog)
 import UpChangelog.Constants as Constants
-import UpChangelog.Types (GenChangelogArgs(..), VersionSource(..))
+import UpChangelog.Types (GenChangelogArgs(..), InitArgs(..), VersionSource(..))
 import UpChangelog.Utils (breakOn)
 
 main :: Effect Unit
@@ -53,11 +53,11 @@ main = do
               else do
                 genChangelog options
 
-        InitChangelog force -> do
-          launchAff_ $ initChangelog force
+        InitChangelog options -> do
+          launchAff_ $ initChangelog options
 
 data Command
-  = InitChangelog Boolean
+  = InitChangelog InitArgs
   | GenChangelog GenChangelogArgs
 
 parseCliArgs :: Array String -> Either Arg.ArgError Command
@@ -77,10 +77,7 @@ cliParser :: Arg.ArgParser Command
 cliParser =
   Arg.choose "command"
     [ updateCommand
-    , Arg.command [ "init", "i" ] "Sets up the repo so that the `update` command will work in the future." ado
-        force <- forceArg
-        Arg.flagHelp
-        in InitChangelog force
+    , initCommand
     ]
     <* Arg.flagHelp
     <* Arg.flagInfo [ "--version", "-v" ] "Shows the current version" version
@@ -159,17 +156,25 @@ cliParser =
         where
         desc = "Uses the git tag to which HEAD currently points for the version string in the header in the changelog file."
 
-    changelogFileArg =
-      Arg.argument [ "--changelog-file" ] desc
-        # Arg.default Constants.changelogFile
-      where
-      desc = "The file path to the changelog file. (defaults to `" <> Constants.changelogFile <> "`)"
+  initCommand =
+    Arg.command [ "init", "i" ] "Sets up the repo so that the `update` command will work in the future." ado
+      force <- forceArg
+      changelogFile <- changelogFileArg
+      changelogDir <- changelogDirArg
+      Arg.flagHelp
+      in InitChangelog $ InitArgs { force, changelogFile, changelogDir }
 
-    changelogDirArg =
-      Arg.argument [ "--changelog-dir" ] desc
-        # Arg.default Constants.changelogDir
-      where
-      desc = "The file path to the directory containing changelog entry files. (defaults to `" <> Constants.changelogDir <> "`)"
+  changelogFileArg =
+    Arg.argument [ "--changelog-file" ] desc
+      # Arg.default Constants.changelogFile
+    where
+    desc = "The file path to the changelog file. (defaults to `" <> Constants.changelogFile <> "`)"
+
+  changelogDirArg =
+    Arg.argument [ "--changelog-dir" ] desc
+      # Arg.default Constants.changelogDir
+    where
+    desc = "The file path to the directory containing changelog entry files. (defaults to `" <> Constants.changelogDir <> "`)"
 
   forceArg =
     Arg.flag [ "--force", "-f" ] desc

@@ -2,40 +2,55 @@ module UpChangelog.Command.InitChangelog where
 
 import Prelude
 
+import Data.Array as Array
 import Data.String as String
 import Effect.Aff (Aff)
-import Effect.Class.Console (log)
+import Effect.Class (liftEffect)
+import Effect.Exception (throw)
 import Node.Encoding (Encoding(..))
 import Node.FS.Aff as FSA
-import Node.Path (sep)
+import Node.Path (FilePath, sep)
 import Node.Path as Path
 import UpChangelog.Command.GenChangelog (commaSeparate)
 import UpChangelog.Constants as Constants
 import UpChangelog.Git (git)
+import UpChangelog.Types (InitArgs(..))
 
-initChangelog :: Boolean -> Aff Unit
-initChangelog force = do
-  unlessM (FSA.exists Constants.changelogDir) do
-    FSA.mkdir Constants.changelogDir
-  let readme = Path.concat [ Constants.changelogDir, Constants.readmeFile ]
-  attemptToAddFile readme Constants.readmeContent
-  attemptToAddFile Constants.changelogFile Constants.changelogContent
+initChangelog :: InitArgs -> Aff Unit
+initChangelog (InitArgs { force, changelogFile, changelogDir }) = do
+  unlessM (FSA.exists changelogDir) do
+    absChangelogDir <- liftEffect $ Path.resolve [] changelogDir
+    mkdirP absChangelogDir
+  let readme = Path.concat [ changelogDir, Constants.readmeFile ]
+  notAdded1 <- attemptToAddFile readme Constants.readmeContent
+  notAdded2 <- attemptToAddFile changelogFile Constants.changelogContent
+  let notAdded = notAdded1 <> notAdded2
+  unless (Array.null notAdded) do
+    liftEffect $ throw $ alreadyExistsWarning notAdded
   where
   attemptToAddFile file content = do
     fileExists <- FSA.exists file
     if (fileExists && not force) then do
-      log $ alreadyExistsWarning file
+      pure [ file ]
     else do
       FSA.writeTextFile UTF8 file content
       void $ git "add" [ "-q", file ]
+      pure []
 
-  alreadyExistsWarning file = String.joinWith " "
-    [ file
-    , "already exists, not overwriting."
-    , "You can use the --force flag to overwrite all files generated"
+  alreadyExistsWarning files = String.joinWith " "
+    [ "Not overwriting the following file(s) that already exist: "
+    , commaSeparate files <> "."
+    , "You can rerun this command with the --force flag to overwrite all files generated"
     , "by this command (i.e. " <> commaSeparate generatedFiles <> ")"
     ]
   generatedFiles =
-    [ Constants.changelogDir <> sep <> Constants.readmeFile
-    , Constants.changelogFile
+    [ changelogDir <> sep <> Constants.readmeFile
+    , changelogFile
     ]
+
+mkdirP :: FilePath -> Aff Unit
+mkdirP path = do
+  exists <- FSA.exists path
+  unless exists do
+    mkdirP $ Path.dirname path
+    FSA.mkdir path

@@ -27,6 +27,18 @@ newtype GenChangelogArgs = GenChangelogArgs
   , changelogDir :: FilePath
   }
 
+derive instance Eq GenChangelogArgs
+derive instance Newtype GenChangelogArgs _
+
+newtype InitArgs = InitArgs
+  { force :: Boolean
+  , changelogFile :: FilePath
+  , changelogDir :: FilePath
+  }
+
+derive instance Eq InitArgs
+derive instance Newtype InitArgs _
+
 newtype ChangelogEntry = ChangelogEntry
   { file :: String
   , content :: String
