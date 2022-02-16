@@ -3,21 +3,24 @@ module Test.Utils where
 import Prelude
 
 import Data.Either (Either(..))
-import Data.Maybe (Maybe)
+import Data.Maybe (Maybe, fromMaybe)
 import Data.Posix.Signal (Signal(..))
 import Data.String as String
 import Effect (Effect)
 import Effect.Aff (Aff, Error, effectCanceler, makeAff, nonCanceler)
+import Effect.Class (liftEffect)
 import Effect.Class.Console (log)
 import Node.Buffer as Buffer
 import Node.ChildProcess (ExecOptions)
 import Node.ChildProcess as ChildProcess
 import Node.Encoding (Encoding(..))
 import Node.Path (FilePath)
+import Node.Process (cwd)
 
 runCmd :: ExecOptions -> String -> Array String -> Aff { error :: Maybe Error, stdout :: String, stderr :: String }
-runCmd options cmd args = makeAff \cb -> do
-  log $ "Running full command: [" <> fullCommand <> "]"
+runCmd options@({ cwd: cwd' }) cmd args = makeAff \cb -> do
+  pwd <- liftEffect cwd
+  log $ "In dir, '" <> (fromMaybe pwd cwd') <> "', running command:\n" <> fullCommand
   proc <- ChildProcess.exec fullCommand options \res -> do
     stdout <- Buffer.toString UTF8 res.stdout
     stderr <- Buffer.toString UTF8 res.stderr
