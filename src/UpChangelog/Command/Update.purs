@@ -36,15 +36,12 @@ import Node.Encoding (Encoding(..))
 import Node.FS.Aff as FSA
 import Node.Path (sep)
 import Node.Path as Path
-import Node.Process as Process
-import Partial.Unsafe (unsafeCrashWith)
 import UpChangelog.Git (git)
 import UpChangelog.Types (ChangelogEntry(..), CommitType(..), GHOwnerRepo, UpdateArgs(..), GitLogCommit(..), VersionSource(..))
 import UpChangelog.Utils (breakOn, breakOnEnd, breakOnSpace, commaSeparate, lines, toUtcDate, wrapQuotes)
 
 update :: UpdateArgs -> Aff Unit
 update (UpdateArgs { github, versionSource, changelogFile, changelogDir }) = do
-  git "rev-parse" [ "--show-toplevel" ] >>= liftEffect <<< Process.chdir <<< String.trim <<< _.stdout
   entries <- (lines <<< _.stdout) <$> git "ls-tree" [ "--name-only", "HEAD", changelogDir <> sep ]
 
   let processEntriesStartingWith' = processEntriesStartingWith github
@@ -59,7 +56,6 @@ update (UpdateArgs { github, versionSource, changelogFile, changelogDir }) = do
   if (Array.null entryFiles) then do
     liftEffect $ throw $ "Cannot update changelog file as there aren't any valid entries in '" <> changelogDir <> "'."
   else do
-
     changes <- git "status" $ [ "-s", "--" ] <> (map wrapQuotes $ Array.cons changelogFile entryFiles)
     unless (changes.stdout == "") $ liftEffect $ throw $
       "You have uncommitted changes to changelog files. " <>
