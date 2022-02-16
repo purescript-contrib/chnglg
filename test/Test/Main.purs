@@ -2,18 +2,20 @@ module Test.Main where
 
 import Prelude
 
+import Data.Array as Array
 import Data.Either (either)
 import Data.Foldable (for_)
 import Data.Maybe (isJust, isNothing)
+import Data.String as String
 import Effect (Effect)
 import Effect.Aff (Aff, runAff_)
-import Effect.Aff.Class (liftAff)
 import Effect.Class (liftEffect)
 import Effect.Class.Console (log)
 import Effect.Exception (throwException)
 import Node.ChildProcess (defaultExecOptions)
 import Node.Encoding (Encoding(..))
 import Node.FS.Aff as FSA
+import Node.Path (FilePath, sep)
 import Node.Path as Path
 import Node.Process (chdir, cwd)
 import Test.Spec (SpecT, describe, it)
@@ -22,6 +24,7 @@ import Test.Spec.Reporter (consoleReporter)
 import Test.Spec.Runner (defaultConfig, runSpecT)
 import Test.Utils (delDir, mkdtempAff, runCmd)
 import UpChangelog.Constants as Constants
+import UpChangelog.Utils (breakOnSpace, wrapQuotes)
 
 main :: Effect Unit
 main = runAff_ (either throwException pure) do
@@ -32,19 +35,24 @@ spec = do
   liftEffect $ chdir "test"
   let
     pursChangelog cmd args =
-      liftAff
-        $ runCmd defaultExecOptions "node"
-        $ [ "../../bin/index.js", cmd ] <> args
+      runCmd defaultExecOptions "node" $ [ "../../bin/index.js", cmd ] <> args
     defaultReadme = Path.concat [ Constants.changelogDir, Constants.readmeFile ]
-    readFile = liftAff <<< FSA.readTextFile UTF8
+    readFile = FSA.readTextFile UTF8
+
+    readDir :: FilePath -> Aff (Array FilePath)
+    readDir = FSA.readdir
+
+    withTempDir :: Aff Unit -> Aff Unit
     withTempDir = withTempDir' <<< const
+
+    withTempDir' :: (FilePath -> Aff Unit) -> Aff Unit
     withTempDir' f = do
       pwd <- liftEffect cwd
-      tempDir <- liftAff $ mkdtempAff "init"
+      tempDir <- mkdtempAff "init"
       liftEffect $ chdir tempDir
       res <- f tempDir
       liftEffect $ chdir pwd
-      liftAff $ delDir tempDir
+      delDir tempDir
       pure res
 
   describe "Init command" do
@@ -104,3 +112,40 @@ spec = do
         error `shouldSatisfy` isNothing
         { error: error2 } <- pursChangelog "init" [ "--force", "--changelog-dir", dir, "--changelog-file", file ]
         error2 `shouldSatisfy` isNothing
+
+  describe "Update command" do
+    liftEffect $ chdir "project"
+    let
+      repoArg = "jordanmartinez/purescript-up-changelog"
+      correctFile = "Correct.md"
+      withReset = withReset' Constants.changelogDir Constants.changelogFile
+
+      withReset' :: FilePath -> FilePath -> Aff Unit -> Aff Unit
+      withReset' changeDir changeFile f = do
+        res <- f
+        { stdout } <- runCmd defaultExecOptions "git" [ "branch" ]
+        let
+          { after } = breakOnSpace stdout
+          branchName = String.drop 1 after
+          entries = map wrapQuotes [ changeDir <> sep, changeFile ]
+        void $ runCmd defaultExecOptions "git" $ [ "checkout", branchName, "--" ] <> entries
+        pure res
+
+    it "update - no args - produces expected content" do
+      withReset do
+        { error } <- pursChangelog "update" [ "--repo", repoArg ]
+        error `shouldSatisfy` isNothing
+        files <- readDir Constants.changelogDir
+        files `shouldSatisfy` Array.null
+        logContent <- readFile Constants.changelogFile
+        expectedContent <- readFile correctFile
+        logContent `shouldEqual` expectedContent
+
+    it "update - package.json version - produces expected content" do
+      pure unit
+
+    it "update - explicit version - produces expected content" do
+      pure unit
+
+    it "update - proj.cabal version - produces expected content" do
+      pure unit
