@@ -40,7 +40,7 @@ import Node.Process as Process
 import Partial.Unsafe (unsafeCrashWith)
 import UpChangelog.Git (git)
 import UpChangelog.Types (ChangelogEntry(..), CommitType(..), GHOwnerRepo, UpdateArgs(..), GitLogCommit(..), VersionSource(..))
-import UpChangelog.Utils (breakOn, breakOnEnd, breakOnSpace, lines, toUtcDate, wrapQuotes)
+import UpChangelog.Utils (breakOn, breakOnEnd, breakOnSpace, commaSeparate, lines, toUtcDate, wrapQuotes)
 
 update :: UpdateArgs -> Aff Unit
 update (UpdateArgs { github, versionSource, changelogFile, changelogDir }) = do
@@ -196,15 +196,6 @@ lookupPRAuthor gh prNum = do
           pure rec.user.login
     Right js -> do
       liftEffect $ throw $ "Lookup PR author failed. " <> show js.status <> " " <> show js.statusText
-
-commaSeparate :: Array String -> String
-commaSeparate = case _ of
-  [] -> ""
-  [ a ] -> a
-  [ a, b ] -> a <> " and " <> b
-  more
-    | Just { init, last } <- Array.unsnoc more -> String.joinWith ", " init <> ", and " <> last
-    | otherwise -> unsafeCrashWith "This is not possible"
 
 getVersion :: VersionSource -> Aff String
 getVersion = case _ of

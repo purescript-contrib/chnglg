@@ -8,6 +8,7 @@ import Data.Nullable (Nullable)
 import Data.String (Pattern(..))
 import Data.String as String
 import Data.Traversable (for)
+import Partial.Unsafe (unsafeCrashWith)
 
 breakOnSpace :: String -> { before :: String, after :: String }
 breakOnSpace = breakOn (Pattern " ")
@@ -27,6 +28,15 @@ lines = String.split (Pattern "\n")
 
 wrapQuotes :: String -> String
 wrapQuotes s = "\"" <> s <> "\""
+
+commaSeparate :: Array String -> String
+commaSeparate = case _ of
+  [] -> ""
+  [ a ] -> a
+  [ a, b ] -> a <> " and " <> b
+  more
+    | Just { init, last } <- Array.unsnoc more -> String.joinWith ", " init <> ", and " <> last
+    | otherwise -> unsafeCrashWith "This is not possible"
 
 filterM :: forall m a. Monad m => (a -> m Boolean) -> Array a -> m (Array a)
 filterM p arr = do
