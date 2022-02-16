@@ -39,6 +39,7 @@
     "xhr2": "^0.2.1"
   },
   "devDependencies": {
-    "esbuild": "^0.14.21"
+    "esbuild": "^0.14.21",
+    "spago": "^0.20.7"
   }
 }
