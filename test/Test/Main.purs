@@ -59,48 +59,48 @@ spec = do
         readmeContent `shouldEqual` Constants.readmeContent
         logContent `shouldEqual` Constants.changelogContent
 
-  it "init - does not ovewrite pre-existing files" do
-    withTempDir do
-      { error } <- pursChangelog "init" []
-      error `shouldSatisfy` isNothing
-      { error: error2 } <- pursChangelog "init" []
-      error2 `shouldSatisfy` isJust
+    it "init - does not ovewrite pre-existing files" do
+      withTempDir do
+        { error } <- pursChangelog "init" []
+        error `shouldSatisfy` isNothing
+        { error: error2 } <- pursChangelog "init" []
+        error2 `shouldSatisfy` isJust
 
-  it "init - force - ovewrites pre-existing files" do
-    withTempDir do
-      { error } <- pursChangelog "init" []
-      error `shouldSatisfy` isNothing
-      { error: error2 } <- pursChangelog "init" [ "--force" ]
-      error2 `shouldSatisfy` isNothing
+    it "init - force - ovewrites pre-existing files" do
+      withTempDir do
+        { error } <- pursChangelog "init" []
+        error `shouldSatisfy` isNothing
+        { error: error2 } <- pursChangelog "init" [ "--force" ]
+        error2 `shouldSatisfy` isNothing
 
-  it "init - custom file paths - files' content should match constants' content" do
-    withTempDir do
-      let
-        dir = "custom-dir"
-        file = "custom-file"
-      { error } <- pursChangelog "init" [ "--changelog-dir", dir, "--changelog-file", file ]
-      error `shouldSatisfy` isNothing
-      readmeContent <- readFile $ Path.concat [ dir, Constants.readmeFile ]
-      logContent <- readFile file
-      readmeContent `shouldEqual` Constants.readmeContent
-      logContent `shouldEqual` Constants.changelogContent
+    it "init - custom file paths - files' content should match constants' content" do
+      withTempDir do
+        let
+          dir = "custom-dir"
+          file = "custom-file"
+        { error } <- pursChangelog "init" [ "--changelog-dir", dir, "--changelog-file", file ]
+        error `shouldSatisfy` isNothing
+        readmeContent <- readFile $ Path.concat [ dir, Constants.readmeFile ]
+        logContent <- readFile file
+        readmeContent `shouldEqual` Constants.readmeContent
+        logContent `shouldEqual` Constants.changelogContent
 
-  it "init - custom file paths - does not overwrite pre-existing files" do
-    withTempDir do
-      let
-        dir = "custom-dir"
-        file = "custom-file"
-      { error } <- pursChangelog "init" [ "--changelog-dir", dir, "--changelog-file", file ]
-      error `shouldSatisfy` isNothing
-      { error: error2 } <- pursChangelog "init" [ "--changelog-dir", dir, "--changelog-file", file ]
-      error2 `shouldSatisfy` isJust
+    it "init - custom file paths - does not overwrite pre-existing files" do
+      withTempDir do
+        let
+          dir = "custom-dir"
+          file = "custom-file"
+        { error } <- pursChangelog "init" [ "--changelog-dir", dir, "--changelog-file", file ]
+        error `shouldSatisfy` isNothing
+        { error: error2 } <- pursChangelog "init" [ "--changelog-dir", dir, "--changelog-file", file ]
+        error2 `shouldSatisfy` isJust
 
-  it "init - custom file paths, force - overwrites pre-existing files" do
-    withTempDir do
-      let
-        dir = "custom-dir"
-        file = "custom-file"
-      { error } <- pursChangelog "init" [ "--changelog-dir", dir, "--changelog-file", file ]
-      error `shouldSatisfy` isNothing
-      { error: error2 } <- pursChangelog "init" [ "--force", "--changelog-dir", dir, "--changelog-file", file ]
-      error2 `shouldSatisfy` isNothing
+    it "init - custom file paths, force - overwrites pre-existing files" do
+      withTempDir do
+        let
+          dir = "custom-dir"
+          file = "custom-file"
+        { error } <- pursChangelog "init" [ "--changelog-dir", dir, "--changelog-file", file ]
+        error `shouldSatisfy` isNothing
+        { error: error2 } <- pursChangelog "init" [ "--force", "--changelog-dir", dir, "--changelog-file", file ]
+        error2 `shouldSatisfy` isNothing
