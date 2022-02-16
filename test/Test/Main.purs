@@ -2,7 +2,6 @@ module Test.Main where
 
 import Prelude
 
-import Data.Array as Array
 import Data.Either (either)
 import Data.Foldable (for_)
 import Data.Maybe (isJust, isNothing)
@@ -10,7 +9,6 @@ import Data.String as String
 import Effect (Effect)
 import Effect.Aff (Aff, joinFiber, launchAff_, runAff, runAff_)
 import Effect.Class (liftEffect)
-import Effect.Class.Console (log)
 import Effect.Exception (throwException)
 import Node.ChildProcess (defaultExecOptions)
 import Node.Encoding (Encoding(..))
@@ -133,7 +131,7 @@ spec = do
           { stdout } <- runCmd defaultExecOptions "git" [ "branch" ]
           let
             { after } = breakOnSpace stdout
-            branchName = String.drop 1 after
+            branchName = String.trim $ String.drop 1 after
             entries = map wrapQuotes [ changeDir <> sep, changeFile ]
           void $ runCmd defaultExecOptions "git" $ [ "checkout", branchName, "--" ] <> entries
 
