@@ -58,7 +58,6 @@ spec = do
   describe "Init command" do
     it "init - no args - files' content should match constants' content" do
       withTempDir do
-        log "About to run purs changelog"
         { error } <- pursChangelog "init" []
         for_ error \e -> liftEffect $ throwException e
         error `shouldSatisfy` isNothing
