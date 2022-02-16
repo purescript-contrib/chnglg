@@ -154,7 +154,7 @@ cliParser =
         Arg.argument [ "--explicit-release", "-e" ] desc
           # Arg.unformat "SEMVER_VERSION" (bimap show ExplicitVersion <<< Version.parseVersion)
         where
-        desc = "Uses the git tag to which HEAD currently points for the version string in the header in the changelog file."
+        desc = "Uses the user-provided version via the semver scheme (e.g. `MAJOR.MINOR.PATCH`) for the version string in the header in the changelog file."
 
   initCommand =
     Arg.command [ "init", "i" ] "Sets up the repo so that the `update` command will work in the future." ado
