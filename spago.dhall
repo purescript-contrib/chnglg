@@ -4,7 +4,6 @@
   , "affjax"
   , "argonaut-codecs"
   , "arrays"
-  , "bifunctors"
   , "console"
   , "control"
   , "datetime"
@@ -28,10 +27,11 @@
   , "posix-types"
   , "precise-datetime"
   , "prelude"
+  , "spec"
   , "strings"
   , "tuples"
   , "versions"
   ]
 , packages = ./packages.dhall
-, sources = [ "src/**/*.purs" ]
+, sources = [ "src/**/*.purs", "test/**/*.purs" ]
 }

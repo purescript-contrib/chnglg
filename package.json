@@ -14,7 +14,8 @@
     "bundle:esbuild": "esbuild --bundle --outfile=bin/index.js --platform=node --minify --charset=utf8 bundle/Main/index.js",
     "bundle:shebang": "sed -i '1i #!/usr/bin/env node' bin/index.js",
     "bundle": "npm run build && npm run bundle:spago && npm run bundle:esbuild && npm run bundle:shebang",
-    "test": "echo \"No tests have been written yet\"",
+    "build:test": "spago build --purs-args=\"--strict --censor-lib\"",
+    "test": "npm run build:test && npm run bundle && spago test --purs-args=\"--strict --censor-lib\"",
     "format": "purs-tidy format-in-place src bin",
     "prepublishOnly": "rm -rf output bundle bin/index.js && npm run bundle"
   },
