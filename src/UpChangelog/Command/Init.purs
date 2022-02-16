@@ -1,4 +1,4 @@
-module UpChangelog.Command.InitChangelog where
+module UpChangelog.Command.Init where
 
 import Prelude
 
@@ -16,8 +16,8 @@ import UpChangelog.Constants as Constants
 import UpChangelog.Git (git)
 import UpChangelog.Types (InitArgs(..))
 
-initChangelog :: InitArgs -> Aff Unit
-initChangelog (InitArgs { force, changelogFile, changelogDir }) = do
+init :: InitArgs -> Aff Unit
+init (InitArgs { force, changelogFile, changelogDir }) = do
   unlessM (FSA.exists changelogDir) do
     absChangelogDir <- liftEffect $ Path.resolve [] changelogDir
     mkdirP absChangelogDir
