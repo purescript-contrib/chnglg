@@ -18,10 +18,10 @@ import Effect.Class.Console as Console
 import Node.FS.Aff as FSA
 import Node.Path (sep)
 import Node.Process as Process
-import UpChangelog.Command.GenChangelog (genChangelog)
-import UpChangelog.Command.InitChangelog (initChangelog)
+import UpChangelog.Command.Init (init)
+import UpChangelog.Command.Update (update)
 import UpChangelog.Constants as Constants
-import UpChangelog.Types (GenChangelogArgs(..), InitArgs(..), VersionSource(..))
+import UpChangelog.Types (InitArgs(..), UpdateArgs(..), VersionSource(..))
 import UpChangelog.Utils (breakOn)
 
 main :: Effect Unit
@@ -39,7 +39,7 @@ main = do
           Process.exit 1
     Right cmd ->
       case cmd of
-        GenChangelog options@(GenChangelogArgs opts) -> do
+        Update options@(UpdateArgs opts) -> do
           launchAff_ do
             dirExists <- FSA.exists opts.changelogDir
             if not $ dirExists then do
@@ -51,14 +51,14 @@ main = do
                 Console.log $ "Cannot update changelog file as there are no files in '" <> opts.changelogDir <> "."
                 liftEffect $ Process.exit 1
               else do
-                genChangelog options
+                update options
 
-        InitChangelog options -> do
-          launchAff_ $ initChangelog options
+        Init options -> do
+          launchAff_ $ init options
 
 data Command
-  = InitChangelog InitArgs
-  | GenChangelog GenChangelogArgs
+  = Init InitArgs
+  | Update UpdateArgs
 
 parseCliArgs :: Array String -> Either Arg.ArgError Command
 parseCliArgs = Arg.parseArgs
@@ -89,7 +89,7 @@ cliParser =
       changelogFile <- changelogFileArg
       changelogDir <- changelogDirArg
       Arg.flagHelp
-      in GenChangelog (GenChangelogArgs { github, versionSource, changelogFile, changelogDir })
+      in Update (UpdateArgs { github, versionSource, changelogFile, changelogDir })
     where
     cmdDesc = joinWith "\n"
       [ "Updates the changelog file with a new releae entry based on files in the changelog directory"
@@ -162,7 +162,7 @@ cliParser =
       changelogFile <- changelogFileArg
       changelogDir <- changelogDirArg
       Arg.flagHelp
-      in InitChangelog $ InitArgs { force, changelogFile, changelogDir }
+      in Init $ InitArgs { force, changelogFile, changelogDir }
 
   changelogFileArg =
     Arg.argument [ "--changelog-file" ] desc
