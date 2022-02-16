@@ -47,5 +47,5 @@ jobs:
         run: npm run test:ci
 
       - name: Verify formatting (Ubuntu only)
-        if: matrix.os == 'ubuntu-latest'
+        if: runner.os == 'Linux'
         run: npm run check
