@@ -15,8 +15,8 @@ import Node.Encoding (Encoding(..))
 import Node.FS.Aff as FSA
 import Node.Path (FilePath, sep)
 import Node.Path as Path
-import Node.Process (chdir, cwd)
-import Test.Spec (SpecT, describe, describeOnly, it)
+import Node.Process (chdir)
+import Test.Spec (SpecT, describe, it)
 import Test.Spec.Assertions (shouldEqual, shouldSatisfy)
 import Test.Spec.Reporter (consoleReporter)
 import Test.Spec.Runner (defaultConfig, runSpecT)
@@ -30,7 +30,6 @@ main = runAff_ (either throwException pure) do
 
 spec :: SpecT Aff Unit Aff Unit
 spec = do
-  liftEffect $ chdir "test"
   let
     pursChangelog cmd args =
       runCmd defaultExecOptions "node" $ [ "../../bin/index.js", cmd ] <> args
@@ -45,12 +44,13 @@ spec = do
 
     withTempDir' :: (FilePath -> Aff Unit) -> Aff Unit
     withTempDir' f = do
-      pwd <- liftEffect cwd
+      liftEffect $ chdir "test"
       tempDir <- mkdtempAff "init"
       liftEffect $ chdir tempDir
       res <- f tempDir
-      liftEffect $ chdir pwd
+      liftEffect $ chdir ".."
       delDir tempDir
+      liftEffect $ chdir ".."
       pure res
 
   describe "Init command" do
@@ -110,8 +110,7 @@ spec = do
         { error: error2 } <- pursChangelog "init" [ "--force", "--changelog-dir", dir, "--changelog-file", file ]
         error2 `shouldSatisfy` isNothing
 
-  describeOnly "Update command" do
-    liftEffect $ chdir "project"
+  describe "Update command" do
     let
       repoArg = "jordanmartinez/purescript-up-changelog"
       correctFile = "Correct.md"
@@ -119,6 +118,7 @@ spec = do
 
       withReset' :: FilePath -> FilePath -> Aff Unit -> Aff Unit
       withReset' changeDir changeFile f = do
+        liftEffect $ chdir "test/project"
         fiber <- liftEffect $ runAff (either resetRethrow pure) f
         res <- joinFiber fiber
         reset
@@ -134,6 +134,7 @@ spec = do
             branchName = String.trim $ String.drop 1 after
             entries = map wrapQuotes [ changeDir <> sep, changeFile ]
           void $ runCmd defaultExecOptions "git" $ [ "checkout", branchName, "--" ] <> entries
+          liftEffect $ chdir "../.."
 
     it "update - no args - produces expected content" do
       withReset do
