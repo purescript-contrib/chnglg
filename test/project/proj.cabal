@@ -1,0 +1,6 @@
+cabal-version:    2.4
+
+name:            someName
+version:         1.2.3
+
+description: some description here...
