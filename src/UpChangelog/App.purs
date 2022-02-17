@@ -2,11 +2,12 @@ module UpChangelog.App where
 
 import Prelude
 
-import Control.Monad.Reader (class MonadAsk, class MonadReader, ReaderT, ask)
+import Control.Monad.Reader (class MonadAsk, class MonadReader, ReaderT, ask, runReaderT)
 import Effect (Effect)
 import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class (class MonadEffect, liftEffect)
+import Effect.Exception (throw)
 import Node.Encoding (Encoding(..))
 import Node.FS.Aff as FSA
 import Node.Path (FilePath)
@@ -18,6 +19,9 @@ type Env r =
   }
 
 newtype App r a = App (ReaderT (Env r) Aff a)
+
+runApp :: forall r a. App r a -> Env r -> Aff a
+runApp (App rt) env = (runReaderT rt) env
 
 derive newtype instance functorApp :: Functor (App r)
 derive newtype instance applyApp :: Apply (App r)
@@ -43,6 +47,9 @@ logDebug :: forall r. String -> App r Unit
 logDebug msg = do
   env <- ask
   liftEffect $ env.logger.logDebug msg
+
+die :: forall r a. String -> App r a
+die = liftEffect <<< throw
 
 pathExists :: forall r. FilePath -> App r Boolean
 pathExists = liftAff <<< FSA.exists

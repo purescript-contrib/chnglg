@@ -10,17 +10,19 @@ import Data.Either (Either(..))
 import Data.Maybe (isJust)
 import Data.String (Pattern(..), contains, joinWith)
 import Data.String as String
+import Data.Tuple (Tuple(..))
 import Data.Version as Version
 import Effect (Effect)
 import Effect.Aff (launchAff_, throwError)
-import Effect.Class (liftEffect)
 import Effect.Class.Console as Console
-import Node.FS.Aff as FSA
 import Node.Path (sep)
 import Node.Process as Process
+import UpChangelog.App (runApp)
 import UpChangelog.Command.Init (init)
 import UpChangelog.Command.Update (update)
 import UpChangelog.Constants as Constants
+import UpChangelog.Logger (LoggerType, mkLogger)
+import UpChangelog.Logger as Logger
 import UpChangelog.Types (InitArgs, UpdateArgs, VersionSource(..))
 import UpChangelog.Utils (breakOn)
 
@@ -37,30 +39,19 @@ main = do
           Process.exit 0
         _ ->
           Process.exit 1
-    Right cmd ->
+    Right (Tuple logType cmd) -> do
       case cmd of
         Update options -> do
-          launchAff_ do
-            dirExists <- FSA.exists options.changelogDir
-            if not $ dirExists then do
-              Console.log $ "Cannot update changelog file as '" <> options.changelogDir <> "' does not exist."
-              liftEffect $ Process.exit 1
-            else do
-              entries <- FSA.readdir options.changelogDir
-              if Array.null entries then do
-                Console.log $ "Cannot update changelog file as there are no files in '" <> options.changelogDir <> "."
-                liftEffect $ Process.exit 1
-              else do
-                update options
+          launchAff_ $ runApp update { logger: mkLogger logType, cli: options }
 
         Init options -> do
-          launchAff_ $ init options
+          launchAff_ $ runApp init { logger: mkLogger logType, cli: options }
 
 data Command
   = Init InitArgs
   | Update UpdateArgs
 
-parseCliArgs :: Array String -> Either Arg.ArgError Command
+parseCliArgs :: Array String -> Either Arg.ArgError (Tuple LoggerType Command)
 parseCliArgs = Arg.parseArgs
   "purs-changelog"
   ( String.joinWith "\n"
@@ -73,15 +64,31 @@ parseCliArgs = Arg.parseArgs
   )
   cliParser
 
-cliParser :: Arg.ArgParser Command
+cliParser :: Arg.ArgParser (Tuple LoggerType Command)
 cliParser =
-  Arg.choose "command"
-    [ updateCommand
-    , initCommand
-    ]
-    <* Arg.flagHelp
-    <* Arg.flagInfo [ "--version", "-v" ] "Shows the current version" version
+  Tuple <$> (loggerArg # Arg.default Logger.Error)
+    <*> cmdArg
   where
+  loggerArg =
+    Arg.choose "logger"
+      [ quiet
+      , info
+      , debug
+      ]
+      <* Arg.flagHelp
+    where
+    quiet = Logger.None <$ Arg.flag [ "--quiet", "-q" ] "Hide all logging"
+    info = Logger.Info <$ Arg.flag [ "--log-info" ] "Slightly increase logging output"
+    debug = Logger.Debug <$ Arg.flag [ "--log-debug" ] "Output all logging output"
+
+  cmdArg =
+    Arg.choose "command"
+      [ updateCommand
+      , initCommand
+      ]
+      <* Arg.flagHelp
+      <* Arg.flagInfo [ "--version", "-v" ] "Shows the current version" version
+
   updateCommand =
     Arg.command [ "update", "u" ] cmdDesc ado
       github <- githubRepoArg

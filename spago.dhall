@@ -30,6 +30,7 @@
   , "prelude"
   , "spec"
   , "strings"
+  , "transformers"
   , "tuples"
   , "versions"
   ]
