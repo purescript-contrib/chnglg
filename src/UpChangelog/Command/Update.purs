@@ -45,7 +45,10 @@ update = do
   entries' <- (lines <<< _.stdout) <$> git "ls-tree" [ "--name-only", "HEAD", changelogDir <> sep ]
   let
     readmeFile = Path.concat [ changelogDir, Constants.readmeFile ]
-    entries = Array.filter (\s -> s /= "" || s /= readmeFile) entries'
+    entries = entries'
+      # Array.filter \str -> do
+          let s = String.trim str
+          s /= "" || s /= readmeFile
   logInfo $ "# of entries found in changelog: " <> (show $ Array.length entries)
   logDebug $ "Entries found in changelog dir were:\n" <> String.joinWith "\n" entries
 
