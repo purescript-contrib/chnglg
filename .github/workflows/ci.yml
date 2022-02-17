@@ -19,16 +19,11 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          # By default, excluding the below option will checkout the commit
-          # that merges the PR triggering this build with the
-          # the base branch it targets. Doing that will mess up the logic
-          # executed by the `purs-changelog` binary because the PR numbers
-          # won't be included in the commits
-          # So, we checkout the head commit of the pull request instead.
-          # ref: ${{ github.event.pull_request.head.sha }}
-
           # Fetch all history and tags to ensure we get all commits made
-          # in the PR
+          # in the PR. Otherwise, we only fetch the commit that
+          # merges the PR's HEAD to the base branch and prune everything else.
+          # This causes the PR numbers to not appear in the commit titles
+          # and causes the `update` command's test to fail.
           fetch-depth: 0
       - uses: actions/setup-node@v1
         with:
