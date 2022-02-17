@@ -5,7 +5,6 @@ import Prelude
 import Data.Either (either)
 import Data.Foldable (for_)
 import Data.Maybe (isJust, isNothing)
-import Data.String as String
 import Effect (Effect)
 import Effect.Aff (Aff, joinFiber, launchAff_, runAff, runAff_)
 import Effect.Class (liftEffect)
@@ -22,7 +21,7 @@ import Test.Spec.Reporter (consoleReporter)
 import Test.Spec.Runner (defaultConfig, runSpecT)
 import Test.Utils (delDir, mkdtempAff, runCmd)
 import UpChangelog.Constants as Constants
-import UpChangelog.Utils (breakOnSpace, wrapQuotes)
+import UpChangelog.Utils (wrapQuotes)
 
 main :: Effect Unit
 main = runAff_ (either throwException pure) do
@@ -128,12 +127,9 @@ spec = do
           reset
           void $ liftEffect $ throwException e
         reset = do
-          { stdout } <- runCmd defaultExecOptions "git" [ "branch" ]
           let
-            { after } = breakOnSpace stdout
-            branchName = String.trim $ String.drop 1 after
             entries = map wrapQuotes [ changeDir <> sep, changeFile ]
-          void $ runCmd defaultExecOptions "git" $ [ "checkout", branchName, "--" ] <> entries
+          void $ runCmd defaultExecOptions "git" $ [ "checkout", "HEAD", "--" ] <> entries
           liftEffect $ chdir "../.."
 
     it "update - no args - produces expected content" do
