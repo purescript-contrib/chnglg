@@ -14,10 +14,10 @@ import Node.Path as Path
 import UpChangelog.Utils (commaSeparate)
 import UpChangelog.Constants as Constants
 import UpChangelog.Git (git)
-import UpChangelog.Types (InitArgs(..))
+import UpChangelog.Types (InitArgs)
 
 init :: InitArgs -> Aff Unit
-init (InitArgs { force, changelogFile, changelogDir }) = do
+init { force, changelogFile, changelogDir } = do
   unlessM (FSA.exists changelogDir) do
     absChangelogDir <- liftEffect $ Path.resolve [] changelogDir
     mkdirP absChangelogDir

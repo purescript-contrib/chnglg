@@ -37,11 +37,11 @@ import Node.FS.Aff as FSA
 import Node.Path (sep)
 import Node.Path as Path
 import UpChangelog.Git (git)
-import UpChangelog.Types (ChangelogEntry(..), CommitType(..), GHOwnerRepo, UpdateArgs(..), GitLogCommit(..), VersionSource(..))
+import UpChangelog.Types (ChangelogEntry(..), CommitType(..), GHOwnerRepo, UpdateArgs, GitLogCommit(..), VersionSource(..))
 import UpChangelog.Utils (breakOn, breakOnEnd, breakOnSpace, commaSeparate, lines, toUtcDate, wrapQuotes)
 
 update :: UpdateArgs -> Aff Unit
-update (UpdateArgs { github, versionSource, changelogFile, changelogDir }) = do
+update { github, versionSource, changelogFile, changelogDir } = do
   entries <- (lines <<< _.stdout) <$> git "ls-tree" [ "--name-only", "HEAD", changelogDir <> sep ]
 
   let processEntriesStartingWith' = processEntriesStartingWith github
