@@ -8,6 +8,7 @@ import Data.Maybe (Maybe(..), isJust, isNothing)
 import Effect (Effect)
 import Effect.Aff (Aff, Milliseconds(..), joinFiber, launchAff_, runAff, runAff_)
 import Effect.Class (liftEffect)
+import Effect.Class.Console (log)
 import Effect.Exception (throwException)
 import Node.ChildProcess (defaultExecOptions)
 import Node.Encoding (Encoding(..))
@@ -15,7 +16,8 @@ import Node.FS.Aff as FSA
 import Node.Path (FilePath, sep)
 import Node.Path as Path
 import Node.Process (chdir)
-import Test.Spec (SpecT, describe, it, sequential)
+import Test.Spec (SpecT, describe, sequential)
+import Test.Spec as Spec
 import Test.Spec.Assertions (shouldEqual, shouldSatisfy)
 import Test.Spec.Reporter (consoleReporter)
 import Test.Spec.Runner (defaultConfig, runSpecT)
@@ -51,6 +53,11 @@ spec = do
       delDir tempDir
       liftEffect $ chdir ".."
       pure res
+
+    it str test = do
+      log $ "::group::{" <> str <> "}"
+      Spec.it str test
+      log "::endgroup::"
 
   describe "Init command" do
     it "init - no args - files' content should match constants' content" do
