@@ -223,6 +223,7 @@ getPrAuthors prNumbers = do
   where
   findRemote name = do
     remotes <- map (lines <<< _.stdout) $ git "remote" [ "-v" ]
+    logDebug $ "Git remotes are:\n" <> String.joinWith "\n" remotes
     let
       mbRemote =
         Array.head
@@ -234,7 +235,11 @@ getPrAuthors prNumbers = do
       Just url -> do
         case runParser url remoteRepoParser of
           Left e -> do
-            die $ "Found remote, but could not determine its repo. Parser error was: " <> show e
+            die $ String.joinWith " "
+              [ "Found remote, but could not determine its repo."
+              , " While trying to parse, '" <> url <> "',"
+              , " parser error was: " <> show e
+              ]
           Right a -> pure a
 
   remoteRepoParser = sshParser <|> httpsParser
