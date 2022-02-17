@@ -3,9 +3,9 @@ module Test.Main where
 import Prelude
 
 import Data.Either (either)
-import Data.Maybe (isNothing)
+import Data.Maybe (Maybe(..), isNothing)
 import Effect (Effect)
-import Effect.Aff (Aff, joinFiber, launchAff_, runAff, runAff_)
+import Effect.Aff (Aff, Milliseconds(..), joinFiber, launchAff_, runAff, runAff_)
 import Effect.Class (liftEffect)
 import Effect.Exception (throwException)
 import Node.ChildProcess (defaultExecOptions)
@@ -23,7 +23,7 @@ import UpChangelog.Utils (wrapQuotes)
 
 main :: Effect Unit
 main = runAff_ (either throwException pure) do
-  void $ join $ runSpecT defaultConfig [ consoleReporter ] $ sequential spec
+  void $ join $ runSpecT (defaultConfig { timeout = Just $ Milliseconds 20_000.0 }) [ consoleReporter ] $ sequential spec
 
 spec :: SpecT Aff Unit Aff Unit
 spec = do
