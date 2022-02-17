@@ -17,7 +17,7 @@ import Data.Either (Either(..), either, hush)
 import Data.Formatter.DateTime (unformat)
 import Data.HTTP.Method (Method(..))
 import Data.Int as Int
-import Data.Maybe (Maybe(..), isJust)
+import Data.Maybe (Maybe(..), fromMaybe, isJust)
 import Data.MediaType (MediaType(..))
 import Data.Newtype (over, unwrap)
 import Data.Nullable as Nullable
@@ -206,16 +206,18 @@ isInterestingCommit (GitLogCommit r) = case fst r.data of
 
 lookupPRAuthor :: Int -> App (cli :: UpdateArgs) String
 lookupPRAuthor prNum = do
-  { cli: { github: gh } } <- ask
+  { cli: { github: gh, mbToken } } <- ask
   let
     url = "https://api.github.com/repos/" <> gh.owner <> "/" <> gh.repo <> "/pulls/" <> show prNum
+    headers = [ Accept $ MediaType "application/vnd.github.v3+json" ]
   logDebug $ "Sending GET request to: " <> url
   resp <- liftAff $ Affjax.request $ defaultRequest
     { url = url
     , responseFormat = ARF.json
     , method = Left GET
-    , headers =
-        [ Accept $ MediaType "application/vnd.github.v3+json" ]
+    , headers = fromMaybe headers do
+        tok <- mbToken
+        pure $ Array.snoc headers $ RequestHeader "Authorization" $ "token" <> tok
     }
   for_ resp \js -> do
     logDebug $ "Got response: " <> show js.status <> " " <> show js.statusText

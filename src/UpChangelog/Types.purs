@@ -4,6 +4,7 @@ import Prelude
 
 import Data.Argonaut.Decode (class DecodeJson, decodeJson)
 import Data.DateTime (DateTime)
+import Data.Maybe (Maybe)
 import Data.Newtype (class Newtype)
 import Data.Version as Version
 import Node.Path (FilePath)
@@ -23,6 +24,7 @@ derive instance Ord VersionSource
 type UpdateArgs =
   { github :: GHOwnerRepo
   , versionSource :: VersionSource
+  , mbToken :: Maybe String
   , changelogFile :: FilePath
   , changelogDir :: FilePath
   }
