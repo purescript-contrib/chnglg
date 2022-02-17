@@ -23,6 +23,7 @@
   , "node-fs-aff"
   , "node-path"
   , "node-process"
+  , "node-streams"
   , "nullable"
   , "partial"
   , "posix-types"

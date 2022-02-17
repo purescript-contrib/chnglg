@@ -21,6 +21,8 @@ import Node.FS.Stats (isDirectory, isFile)
 import Node.Path (FilePath)
 import Node.Path as Path
 import Node.Process (cwd)
+import Node.Process as Process
+import Node.Stream (pipe)
 
 runCmd :: ExecOptions -> String -> Array String -> Aff { error :: Maybe Error, stdout :: String, stderr :: String }
 runCmd options@({ cwd: cwd' }) cmd args = makeAff \cb -> do
@@ -38,6 +40,8 @@ runCmd options@({ cwd: cwd' }) cmd args = makeAff \cb -> do
       log $ "\n\nError msg:\n" <> message e
       log $ "\n\nError stacktrace:\n" <> (show $ stack e)
     cb $ Right { stdout, stderr, error: res.error }
+  void $ pipe (ChildProcess.stdout proc) Process.stdout
+  void $ pipe (ChildProcess.stderr proc) Process.stdout
   pure $ effectCanceler do
     ChildProcess.kill SIGKILL proc
   where
