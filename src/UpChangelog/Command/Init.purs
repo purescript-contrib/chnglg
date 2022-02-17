@@ -45,7 +45,7 @@ init = do
     else do
       logDebug $ "File, '" <> file <> "', either does not exist or --force flag was used. Overwriting."
       writeTextFile file content
-      void $ git "add" [ "-q", file ]
+      void $ git "add" [ file ]
       logDebug $ "Staged file, '" <> file <> "'."
       pure []
 
