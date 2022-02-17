@@ -36,7 +36,7 @@ import Node.Path (sep)
 import Node.Path as Path
 import Text.Parsing.Parser (runParser)
 import Text.Parsing.Parser.Combinators (many1)
-import Text.Parsing.Parser.String (satisfy, string, whiteSpace)
+import Text.Parsing.Parser.String (satisfy, string)
 import UpChangelog.App (App, die, logDebug, logInfo, pathExists, readDir, readTextFile, withApp, writeTextFile)
 import UpChangelog.Constants as Constants
 import UpChangelog.Git (git)
@@ -233,7 +233,7 @@ getPrAuthors prNumbers = do
       Nothing -> do
         die $ "Did not find a remote named '" <> name <> "'. See all available remotes via `git remote -v`"
       Just url -> do
-        case runParser url remoteRepoParser of
+        case runParser (String.trim url) remoteRepoParser of
           Left e -> do
             die $ String.joinWith " "
               [ "Found remote, but could not determine its repo."
@@ -246,7 +246,6 @@ getPrAuthors prNumbers = do
     where
     -- git@github.com:purescript-contrib/purescript-up-changelog.git (fetch)
     sshParser = do
-      void $ whiteSpace
       void $ string "git@github.com:"
       owner <- map fold1 $ many1 $ map SCU.singleton $ satisfy (\c -> c /= '/')
       void $ satisfy (\c -> c == '/')
@@ -254,14 +253,14 @@ getPrAuthors prNumbers = do
       void $ string ".git"
       pure { owner, repo }
 
-    -- https://github.com/purescript-contrib/purescript-up-changelog.git
+    -- GitHub website: https://github.com/purescript-contrib/purescript-up-changelog.git
+    -- Github Actions: https://github.com/purescript-contrib/purescript-up-changelog (fetch)
     httpsParser = do
-      void $ whiteSpace
       void $ string "https://github.com/"
       owner <- map fold $ many1 $ map SCU.singleton $ satisfy (\c -> c /= '/')
       void $ satisfy (\c -> c == '/')
-      repo <- map fold $ many1 $ map SCU.singleton $ satisfy (\c -> c /= '.')
-      void $ string ".git"
+      --
+      repo <- map fold $ many1 $ map SCU.singleton $ satisfy (\c -> c /= '.' || c /= ' ')
       pure { owner, repo }
 
 lookupPRAuthor :: Int -> App (gh :: GHOwnerRepo, mbToken :: Maybe String) String
