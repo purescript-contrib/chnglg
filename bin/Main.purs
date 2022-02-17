@@ -34,11 +34,11 @@ main = do
       Console.log $ Arg.printArgError err
       case err of
         Arg.ArgError _ Arg.ShowHelp ->
-          Process.exit 0
+          setExitCode 0
         Arg.ArgError _ (Arg.ShowInfo _) ->
-          Process.exit 0
+          setExitCode 0
         _ ->
-          Process.exit 1
+          setExitCode 1
     Right (Tuple logType cmd) -> do
       case cmd of
         Update options -> do
@@ -46,6 +46,12 @@ main = do
 
         Init options -> do
           launchAff_ $ runApp init { logger: mkLogger logType, cli: options }
+
+-- Per https://nodejs.org/dist/latest-v14.x/docs/api/process.html#process_process_exit_code
+-- calling `process.exitCode = int;` is safer than calling
+-- `process.exit(int)` because some asynchronous writes to console may still be buffering
+-- but the latter will terminate before those writes finish
+foreign import setExitCode :: Int -> Effect Unit
 
 data Command
   = Init InitArgs
