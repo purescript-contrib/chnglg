@@ -4,11 +4,13 @@ import Prelude
 
 import Data.Either (Either(..))
 import Data.Foldable (for_)
-import Data.Maybe (Maybe)
+import Data.Maybe (Maybe, fromMaybe)
 import Data.Posix.Signal (Signal(..))
 import Data.String as String
 import Effect (Effect)
 import Effect.Aff (Aff, Error, effectCanceler, makeAff, nonCanceler)
+import Effect.Class (liftEffect)
+import Effect.Class.Console (log)
 import Node.Buffer as Buffer
 import Node.ChildProcess (ExecOptions)
 import Node.ChildProcess as ChildProcess
@@ -17,18 +19,19 @@ import Node.FS.Aff as FSA
 import Node.FS.Stats (isDirectory, isFile)
 import Node.Path (FilePath)
 import Node.Path as Path
+import Node.Process (cwd)
 
 runCmd :: ExecOptions -> String -> Array String -> Aff { error :: Maybe Error, stdout :: String, stderr :: String }
-runCmd options {-@({ cwd: cwd' }) -} cmd args = makeAff \cb -> do
-  -- pwd <- liftEffect cwd
-  -- log $ "In dir, '" <> (fromMaybe pwd cwd') <> "', running command:\n" <> fullCommand
+runCmd options@({ cwd: cwd' }) cmd args = makeAff \cb -> do
+  pwd <- liftEffect cwd
+  log $ "In dir, '" <> (fromMaybe pwd cwd') <> "', running command:\n" <> fullCommand
   proc <- ChildProcess.exec fullCommand options \res -> do
     stdout <- Buffer.toString UTF8 res.stdout
     stderr <- Buffer.toString UTF8 res.stderr
-    -- when (stderr /= "") do
-    --   log $ "Stderr: " <> stderr
-    -- when (stdout /= "") do
-    --   log $ "Stdout: " <> stderr
+    when (stderr /= "") do
+      log $ "Stderr: " <> stderr
+    when (stdout /= "") do
+      log $ "Stdout: " <> stderr
     cb $ Right { stdout, stderr, error: res.error }
   pure $ effectCanceler do
     ChildProcess.kill SIGKILL proc
