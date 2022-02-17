@@ -260,7 +260,7 @@ getPrAuthors prNumbers = do
       owner <- map fold $ many1 $ map SCU.singleton $ satisfy (\c -> c /= '/')
       void $ satisfy (\c -> c == '/')
       --
-      repo <- map fold $ many1 $ map SCU.singleton $ satisfy (\c -> c /= '.' || c /= ' ')
+      repo <- map fold $ many1 $ map SCU.singleton $ satisfy (\c -> c /= '.' && c /= ' ')
       pure { owner, repo }
 
 lookupPRAuthor :: Int -> App (gh :: GHOwnerRepo, mbToken :: Maybe String) String
