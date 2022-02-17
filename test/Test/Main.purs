@@ -4,10 +4,9 @@ import Prelude
 
 import Data.Either (either)
 import Data.Foldable (for_)
-import Data.Maybe (isJust, isNothing)
-import Data.String as String
+import Data.Maybe (Maybe(..), isJust, isNothing)
 import Effect (Effect)
-import Effect.Aff (Aff, joinFiber, launchAff_, runAff, runAff_)
+import Effect.Aff (Aff, Milliseconds(..), joinFiber, launchAff_, runAff, runAff_)
 import Effect.Class (liftEffect)
 import Effect.Exception (throwException)
 import Node.ChildProcess (defaultExecOptions)
@@ -22,17 +21,17 @@ import Test.Spec.Reporter (consoleReporter)
 import Test.Spec.Runner (defaultConfig, runSpecT)
 import Test.Utils (delDir, mkdtempAff, runCmd)
 import UpChangelog.Constants as Constants
-import UpChangelog.Utils (breakOnSpace, wrapQuotes)
+import UpChangelog.Utils (wrapQuotes)
 
 main :: Effect Unit
 main = runAff_ (either throwException pure) do
-  void $ join $ runSpecT defaultConfig [ consoleReporter ] $ sequential spec
+  void $ join $ runSpecT (defaultConfig { timeout = Just $ Milliseconds 20_000.0 }) [ consoleReporter ] $ sequential spec
 
 spec :: SpecT Aff Unit Aff Unit
 spec = do
   let
     pursChangelog cmd args =
-      runCmd defaultExecOptions "node" $ [ "../../bin/index.js", cmd ] <> args
+      runCmd defaultExecOptions "node" $ [ "../../bin/index.js", "--log-debug", cmd ] <> args
     defaultReadme = Path.concat [ Constants.changelogDir, Constants.readmeFile ]
     readFile = FSA.readTextFile UTF8
 
@@ -112,7 +111,7 @@ spec = do
 
   describe "Update command" do
     let
-      repoArg = "jordanmartinez/purescript-up-changelog"
+      repoArg = "purescript-contrib/purescript-up-changelog"
       correctFile = "Correct.md"
       withReset = withReset' Constants.changelogDir Constants.changelogFile
 
@@ -128,12 +127,9 @@ spec = do
           reset
           void $ liftEffect $ throwException e
         reset = do
-          { stdout } <- runCmd defaultExecOptions "git" [ "branch" ]
           let
-            { after } = breakOnSpace stdout
-            branchName = String.trim $ String.drop 1 after
             entries = map wrapQuotes [ changeDir <> sep, changeFile ]
-          void $ runCmd defaultExecOptions "git" $ [ "checkout", branchName, "--" ] <> entries
+          void $ runCmd defaultExecOptions "git" $ [ "checkout", "HEAD", "--" ] <> entries
           liftEffect $ chdir "../.."
 
     it "update - no args - produces expected content" do

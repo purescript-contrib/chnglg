@@ -10,18 +10,18 @@ import Data.Either (Either(..))
 import Data.Maybe (isJust)
 import Data.String (Pattern(..), contains, joinWith)
 import Data.String as String
+import Data.Tuple (Tuple(..))
 import Data.Version as Version
 import Effect (Effect)
 import Effect.Aff (launchAff_, throwError)
-import Effect.Class (liftEffect)
-import Effect.Class.Console as Console
-import Node.FS.Aff as FSA
+import Effect.Console (log)
 import Node.Path (sep)
 import Node.Process as Process
+import UpChangelog.App (runApp)
 import UpChangelog.Command.Init (init)
 import UpChangelog.Command.Update (update)
 import UpChangelog.Constants as Constants
-import UpChangelog.Types (InitArgs(..), UpdateArgs(..), VersionSource(..))
+import UpChangelog.Types (InitArgs, Logger, LoggerType(..), UpdateArgs, VersionSource(..))
 import UpChangelog.Utils (breakOn)
 
 main :: Effect Unit
@@ -29,38 +29,47 @@ main = do
   args <- Array.drop 2 <$> Process.argv
   case parseCliArgs args of
     Left err -> do
-      Console.log $ Arg.printArgError err
+      log $ Arg.printArgError err
       case err of
         Arg.ArgError _ Arg.ShowHelp ->
-          Process.exit 0
+          setExitCode 0
         Arg.ArgError _ (Arg.ShowInfo _) ->
-          Process.exit 0
+          setExitCode 0
         _ ->
-          Process.exit 1
-    Right cmd ->
+          setExitCode 1
+    Right (Tuple logType cmd) -> do
       case cmd of
-        Update options@(UpdateArgs opts) -> do
-          launchAff_ do
-            dirExists <- FSA.exists opts.changelogDir
-            if not $ dirExists then do
-              Console.log $ "Cannot update changelog file as '" <> opts.changelogDir <> "' does not exist."
-              liftEffect $ Process.exit 1
-            else do
-              entries <- FSA.readdir opts.changelogDir
-              if Array.null entries then do
-                Console.log $ "Cannot update changelog file as there are no files in '" <> opts.changelogDir <> "."
-                liftEffect $ Process.exit 1
-              else do
-                update options
+        Update options -> do
+          launchAff_ $ runApp update { logger: mkLogger logType, cli: options }
 
         Init options -> do
-          launchAff_ $ init options
+          launchAff_ $ runApp init { logger: mkLogger logType, cli: options }
+
+-- Per https://nodejs.org/dist/latest-v14.x/docs/api/process.html#process_process_exit_code
+-- calling `process.exitCode = int;` is safer than calling
+-- `process.exit(int)` because some asynchronous writes to console may still be buffering
+-- but the latter will terminate before those writes finish
+foreign import setExitCode :: Int -> Effect Unit
+
+mkLogger :: LoggerType -> Logger Effect
+mkLogger = case _ of
+  None -> default
+  Error -> default { logError = log }
+  Info -> default { logError = log, logInfo = log }
+  Debug -> { logError: log, logInfo: log, logDebug: log }
+  where
+  default :: Logger Effect
+  default =
+    { logError: const (pure unit)
+    , logInfo: const (pure unit)
+    , logDebug: const (pure unit)
+    }
 
 data Command
   = Init InitArgs
   | Update UpdateArgs
 
-parseCliArgs :: Array String -> Either Arg.ArgError Command
+parseCliArgs :: Array String -> Either Arg.ArgError (Tuple LoggerType Command)
 parseCliArgs = Arg.parseArgs
   "purs-changelog"
   ( String.joinWith "\n"
@@ -73,15 +82,31 @@ parseCliArgs = Arg.parseArgs
   )
   cliParser
 
-cliParser :: Arg.ArgParser Command
+cliParser :: Arg.ArgParser (Tuple LoggerType Command)
 cliParser =
-  Arg.choose "command"
-    [ updateCommand
-    , initCommand
-    ]
-    <* Arg.flagHelp
-    <* Arg.flagInfo [ "--version", "-v" ] "Shows the current version" version
+  Tuple <$> (loggerArg # Arg.default Error)
+    <*> cmdArg
   where
+  loggerArg =
+    Arg.choose "logger"
+      [ quiet
+      , info
+      , debug
+      ]
+      <* Arg.flagHelp
+    where
+    quiet = None <$ Arg.flag [ "--quiet", "-q" ] "Hide all logging"
+    info = Info <$ Arg.flag [ "--log-info" ] "Slightly increase logging output"
+    debug = Debug <$ Arg.flag [ "--log-debug" ] "Output all logging output"
+
+  cmdArg =
+    Arg.choose "command"
+      [ updateCommand
+      , initCommand
+      ]
+      <* Arg.flagHelp
+      <* Arg.flagInfo [ "--version", "-v" ] "Shows the current version" version
+
   updateCommand =
     Arg.command [ "update", "u" ] cmdDesc ado
       github <- githubRepoArg
@@ -89,7 +114,7 @@ cliParser =
       changelogFile <- changelogFileArg
       changelogDir <- changelogDirArg
       Arg.flagHelp
-      in Update (UpdateArgs { github, versionSource, changelogFile, changelogDir })
+      in Update { github, versionSource, changelogFile, changelogDir }
     where
     cmdDesc = joinWith "\n"
       [ "Updates the changelog file with a new releae entry based on files in the changelog directory"
@@ -162,7 +187,7 @@ cliParser =
       changelogFile <- changelogFileArg
       changelogDir <- changelogDirArg
       Arg.flagHelp
-      in Init $ InitArgs { force, changelogFile, changelogDir }
+      in Init { force, changelogFile, changelogDir }
 
   changelogFileArg =
     Arg.argument [ "--changelog-file" ] desc

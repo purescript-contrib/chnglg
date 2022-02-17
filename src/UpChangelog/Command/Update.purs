@@ -9,6 +9,7 @@ import Affjax.ResponseFormat as ARF
 import Affjax.StatusCode (StatusCode(..))
 import Control.Alt ((<|>))
 import Control.Apply (lift2)
+import Control.Monad.Reader (ask)
 import Data.Argonaut.Decode (decodeJson, parseJson, printJsonDecodeError)
 import Data.Array as Array
 import Data.Array.NonEmpty as NEA
@@ -23,49 +24,55 @@ import Data.Nullable as Nullable
 import Data.RFC3339String.Format (iso8601Format)
 import Data.String (Pattern(..), toLower)
 import Data.String as String
-import Data.Traversable (for, traverse)
+import Data.Traversable (for, for_, traverse)
 import Data.Traversable as Foldable
 import Data.Tuple (Tuple(..), fst, snd)
 import Data.Version (Version, showVersion)
 import Data.Version as Version
-import Effect.Aff (Aff)
 import Effect.Aff.Class (liftAff)
-import Effect.Class (liftEffect)
-import Effect.Exception (throw)
-import Node.Encoding (Encoding(..))
-import Node.FS.Aff as FSA
 import Node.Path (sep)
 import Node.Path as Path
+import UpChangelog.App (App, die, logDebug, logInfo, pathExists, readDir, readTextFile, writeTextFile)
+import UpChangelog.Constants as Constants
 import UpChangelog.Git (git)
-import UpChangelog.Types (ChangelogEntry(..), CommitType(..), GHOwnerRepo, UpdateArgs(..), GitLogCommit(..), VersionSource(..))
+import UpChangelog.Types (ChangelogEntry(..), CommitType(..), GitLogCommit(..), UpdateArgs, VersionSource(..))
 import UpChangelog.Utils (breakOn, breakOnEnd, breakOnSpace, commaSeparate, lines, toUtcDate, wrapQuotes)
 
-update :: UpdateArgs -> Aff Unit
-update (UpdateArgs { github, versionSource, changelogFile, changelogDir }) = do
-  entries <- (lines <<< _.stdout) <$> git "ls-tree" [ "--name-only", "HEAD", changelogDir <> sep ]
+update :: App (cli :: UpdateArgs) Unit
+update = do
+  checkFilePaths
+  { cli: { changelogDir, changelogFile } } <- ask
+  entries' <- (lines <<< _.stdout) <$> git "ls-tree" [ "--name-only", "HEAD", changelogDir <> sep ]
+  let
+    readmeFile = Path.concat [ changelogDir, Constants.readmeFile ]
+    entries = entries'
+      # Array.filter \str -> do
+          let s = String.trim str
+          s /= "" || s /= readmeFile
+  logInfo $ "# of entries found in changelog: " <> (show $ Array.length entries)
+  logDebug $ "Entries found in changelog dir were:\n" <> String.joinWith "\n" entries
 
-  let processEntriesStartingWith' = processEntriesStartingWith github
-
-  breaks <- processEntriesStartingWith' "break" entries
-  features <- processEntriesStartingWith' "feat" entries
-  fixes <- processEntriesStartingWith' "fix" entries
-  internal <- processEntriesStartingWith' "int" entries
-  misc <- processEntriesStartingWith' "misc" entries
+  breaks <- processEntriesStartingWith "break" entries
+  features <- processEntriesStartingWith "feat" entries
+  fixes <- processEntriesStartingWith "fix" entries
+  internal <- processEntriesStartingWith "int" entries
+  misc <- processEntriesStartingWith "misc" entries
 
   let entryFiles = (_.file <<< unwrap) <$> breaks <> features <> fixes <> internal <> misc
   if (Array.null entryFiles) then do
-    liftEffect $ throw $ "Cannot update changelog file as there aren't any valid entries in '" <> changelogDir <> "'."
+    die $ "Cannot update changelog file as there aren't any valid entries in '" <> changelogDir <> "'."
   else do
     changes <- git "status" $ [ "-s", "--" ] <> (map wrapQuotes $ Array.cons changelogFile entryFiles)
-    unless (changes.stdout == "") $ liftEffect $ throw $
+    unless (changes.stdout == "") $ die $
       "You have uncommitted changes to changelog files. " <>
         "Please commit, stash, or revert them before running this script."
 
-    version <- getVersion versionSource
+    version <- getVersion
     { before: changelogPreamble
     , after: changelogRest
-    } <- breakOn (Pattern "\n## ") <$> FSA.readTextFile UTF8 changelogFile
-    FSA.writeTextFile UTF8 changelogFile $
+    } <- breakOn (Pattern "\n## ") <$> readTextFile changelogFile
+    logDebug $ "Changelog preamble is: \n" <> changelogPreamble
+    writeTextFile changelogFile $
       changelogPreamble
         <> "\n## "
         <> version
@@ -76,23 +83,46 @@ update (UpdateArgs { github, versionSource, changelogFile, changelogDir }) = do
         <> conditionalSection "Other improvements" misc
         <> conditionalSection "Internal" internal
         <> changelogRest
+    logInfo $ "Updated changelog file"
 
     void $ git "add" [ changelogFile ]
-    void $ git "rm" $ Array.cons "-q" $ map wrapQuotes entryFiles
+    logDebug $ "Staged changelog file in git"
+    void $ git "rm" $ map wrapQuotes entryFiles
+    logDebug $ "Staged the deletion of the changelog entry files in git"
+  where
+  checkFilePaths = do
+    { cli: options } <- ask
+    ifM (pathExists options.changelogDir)
+      do
+        logDebug $ "Attempting to read changelog dir: " <> options.changelogDir
+        entries <- readDir options.changelogDir
+        when (Array.null $ Array.filter (notEq Constants.readmeFile) entries) do
+          die $ String.joinWith " "
+            [ "Cannot update changelog file as there are no"
+            , "changelog entry files in '"
+            , options.changelogDir <> "'."
+            ]
+      do
+        die $ "Cannot update changelog file as changelog directory, '" <> options.changelogDir <> "', does not exist."
 
-processEntriesStartingWith :: GHOwnerRepo -> String -> Array String -> Aff (Array ChangelogEntry)
-processEntriesStartingWith ownerRepo prefix =
+processEntriesStartingWith :: String -> Array String -> App (cli :: UpdateArgs) (Array ChangelogEntry)
+processEntriesStartingWith prefix arr = do
+  logInfo $ "Processing entries for prefix: " <> prefix
   map (Array.sortWith (_.date <<< unwrap))
-    <<< traverse (updateEntry ownerRepo)
-    <<< Array.filter ((isJust <<< String.stripPrefix (Pattern prefix)) <<< toLower <<< Path.basename)
+    $ traverse updateEntry
+    $ Array.filter
+        ((isJust <<< String.stripPrefix (Pattern prefix)) <<< toLower <<< Path.basename)
+        arr
 
-updateEntry :: GHOwnerRepo -> String -> Aff ChangelogEntry
-updateEntry ownerRepo file = do
-  { before: header, after: body } <- map (breakOn (Pattern "\n") <<< String.trim) $ (FSA.readTextFile UTF8 <<< Path.normalize) file
+updateEntry :: String -> App (cli :: UpdateArgs) ChangelogEntry
+updateEntry file = do
+  logDebug $ "Reading content of file entry: " <> file
+  { before: header, after: body } <- map (breakOn (Pattern "\n") <<< String.trim) $ (readTextFile <<< Path.normalize) file
 
   allCommits <- do
     -- 2c78eb614cb1f3556737900e57d0e7395158791e 2021-11-17T13:27:33-08:00 Title of PR (#4121)
     lns <- map (lines <<< _.stdout) $ git "log" [ "-m", "--follow", "--format=\"%H %cI %s\"", wrapQuotes file ]
+    logDebug $ "For file, '" <> file <> "', got commits:\n" <> String.joinWith "\n" lns
     mbRes <- for lns \str -> do
       let
         { before: hash, after: spaceRemaining } = breakOnSpace str
@@ -108,7 +138,7 @@ updateEntry ownerRepo file = do
         }
     case NEA.fromArray $ Array.sortWith (_.time <<< unwrap) $ Array.catMaybes mbRes of
       Nothing -> do
-        liftEffect $ throw $ "No commits for file: " <> file
+        die $ "No commits for file: " <> file
       Just x -> do
         pure x
 
@@ -126,8 +156,9 @@ updateEntry ownerRepo file = do
         pure if interesting then Just glcWithPr else Nothing
 
   let prNumbers = map (snd <<< _.data <<< unwrap) prCommits
+  logDebug $ "For file, '" <> file <> "', got PR Numbers:" <> show prNumbers
 
-  prAuthors <- Array.nub <$> traverse (lookupPRAuthor ownerRepo) prNumbers
+  prAuthors <- Array.nub <$> traverse lookupPRAuthor prNumbers
 
   let
     headerSuffix =
@@ -162,7 +193,7 @@ parsePRNumber = lift2 (<|>) parseMerge parseSquash
 -- | This function helps us exclude PRs that are just fixups of changelog
 -- | wording. An interesting commit is one that has either edited a file that
 -- | isn't part of the changelog, or is a merge commit.
-isInterestingCommit :: GitLogCommit (Tuple CommitType Int) -> Aff Boolean
+isInterestingCommit :: GitLogCommit (Tuple CommitType Int) -> App (cli :: UpdateArgs) Boolean
 isInterestingCommit (GitLogCommit r) = case fst r.data of
   MergeCommit -> do
     pure true
@@ -173,57 +204,63 @@ isInterestingCommit (GitLogCommit r) = case fst r.data of
       $ Array.all (\path -> "CHANGELOG.md" == path || (isJust $ String.stripPrefix (Pattern "CHANGELOG.d/") path))
       $ lines stdout
 
-lookupPRAuthor :: GHOwnerRepo -> Int -> Aff String
-lookupPRAuthor gh prNum = do
-  resp <- Affjax.request $ defaultRequest
-    { url = "https://api.github.com/repos/" <> gh.owner <> "/" <> gh.repo <> "/pulls/" <> show prNum
+lookupPRAuthor :: Int -> App (cli :: UpdateArgs) String
+lookupPRAuthor prNum = do
+  { cli: { github: gh } } <- ask
+  let
+    url = "https://api.github.com/repos/" <> gh.owner <> "/" <> gh.repo <> "/pulls/" <> show prNum
+  logDebug $ "Sending GET request to: " <> url
+  resp <- liftAff $ Affjax.request $ defaultRequest
+    { url = url
     , responseFormat = ARF.json
     , method = Left GET
     , headers =
         [ Accept $ MediaType "application/vnd.github.v3+json" ]
     }
+  for_ resp \js -> do
+    logDebug $ "Got response: " <> show js.status <> " " <> show js.statusText
   case resp of
-    Left err -> liftEffect $ throw $ printError err
+    Left err -> die $ printError err
     Right js | js.status == StatusCode 200 -> do
       case decodeJson js.body of
         Left e -> do
-          liftEffect $ throw $ "Error in lookupPRAuthor: " <> printJsonDecodeError e
+          die $ "Error in lookupPRAuthor: " <> printJsonDecodeError e
         Right (rec :: { user :: { login :: String } }) -> do
           pure rec.user.login
     Right js -> do
-      liftEffect $ throw $ "Lookup PR author failed. " <> show js.status <> " " <> show js.statusText
+      die $ "Lookup PR author failed. " <> show js.status <> " " <> show js.statusText
 
-getVersion :: VersionSource -> Aff String
-getVersion = case _ of
-  PackageJson packageJsonPath -> do
-    unlessM (FSA.exists packageJsonPath) do
-      liftEffect $ throw
-        $ "`package.json` file was not found using path '" <> packageJsonPath <> "'. Cannot use it to get the version."
-    content <- liftAff $ FSA.readTextFile UTF8 packageJsonPath
-    case parseJson content >>= decodeJson of
-      Left e -> do
-        liftEffect $ throw $ "Error in getVersion: " <> printJsonDecodeError e
-      Right (rec :: { version :: String }) -> do
-        pure rec.version
-  ExplicitVersion version -> do
-    pure $ showVersion version
-  FromGitTag -> do
-    mbVersion <- getVersionFromGitTag
-    case mbVersion of
-      Nothing -> do
-        liftEffect $ throw $ "Error in getVersion for `FromGitTag` case: did not get a tag. Is HEAD pointing to a tag?"
-      Just version -> do
-        pure version
-  Cabal filePath -> do
-    unlessM (FSA.exists filePath) do
-      liftEffect $ throw
-        $ "A `*.cabal` file was not found using path '" <> filePath <> "'. Cannot use it to get the version."
-    content <- liftAff $ FSA.readTextFile UTF8 filePath
-    case Array.findMap (String.stripPrefix (Pattern "version:")) $ lines content of
-      Nothing -> do
-        liftEffect $ throw $ "Error in getVersion for `Cabal` case: did not find a line with content: `version: <versionString>`."
-      Just versionStr -> do
-        pure $ String.trim versionStr
+getVersion :: App (cli :: UpdateArgs) String
+getVersion = do
+  { cli: { versionSource } } <- ask
+  case versionSource of
+    PackageJson packageJsonPath -> do
+      unlessM (pathExists packageJsonPath) do
+        die $ "`package.json` file was not found using path '" <> packageJsonPath <> "'. Cannot use it to get the version."
+      content <- readTextFile packageJsonPath
+      case parseJson content >>= decodeJson of
+        Left e -> do
+          die $ "Error in getVersion: " <> printJsonDecodeError e
+        Right (rec :: { version :: String }) -> do
+          pure rec.version
+    ExplicitVersion version -> do
+      pure $ showVersion version
+    FromGitTag -> do
+      mbVersion <- getVersionFromGitTag
+      case mbVersion of
+        Nothing -> do
+          die $ "Error in getVersion for `FromGitTag` case: did not get a tag. Is HEAD pointing to a tag?"
+        Just version -> do
+          pure version
+    Cabal filePath -> do
+      unlessM (pathExists filePath) do
+        die $ "A `*.cabal` file was not found using path '" <> filePath <> "'. Cannot use it to get the version."
+      content <- readTextFile filePath
+      case Array.findMap (String.stripPrefix (Pattern "version:")) $ lines content of
+        Nothing -> do
+          die $ "Error in getVersion for `Cabal` case: did not find a line with content: `version: <versionString>`."
+        Just versionStr -> do
+          pure $ String.trim versionStr
 
   where
   -- | Get the version tag pointing to the currently checked out commit, if any.
@@ -232,9 +269,10 @@ getVersion = case _ of
   -- |
   -- | If multiple tags point to the checked out commit, return the latest
   -- | version according to semver version comparison.
-  getVersionFromGitTag :: Aff (Maybe String)
+  getVersionFromGitTag :: App (cli :: UpdateArgs) (Maybe String)
   getVersionFromGitTag = do
     output <- git "tag" [ "--points-at", "HEAD" ]
+    logDebug $ "`git tag` output was: " <> show output
     pure $ map Version.showVersion $ maxVersion output.stdout
     where
     maxVersion :: String -> Maybe Version

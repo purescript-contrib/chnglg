@@ -20,24 +20,33 @@ data VersionSource
 derive instance Eq VersionSource
 derive instance Ord VersionSource
 
-newtype UpdateArgs = UpdateArgs
+type UpdateArgs =
   { github :: GHOwnerRepo
   , versionSource :: VersionSource
   , changelogFile :: FilePath
   , changelogDir :: FilePath
   }
 
-derive instance Eq UpdateArgs
-derive instance Newtype UpdateArgs _
-
-newtype InitArgs = InitArgs
+type InitArgs =
   { force :: Boolean
   , changelogFile :: FilePath
   , changelogDir :: FilePath
   }
 
-derive instance Eq InitArgs
-derive instance Newtype InitArgs _
+data LoggerType
+  = None
+  | Error
+  | Info
+  | Debug
+
+derive instance Eq LoggerType
+derive instance Ord LoggerType
+
+type Logger m =
+  { logError :: String -> m Unit
+  , logInfo :: String -> m Unit
+  , logDebug :: String -> m Unit
+  }
 
 newtype ChangelogEntry = ChangelogEntry
   { file :: String

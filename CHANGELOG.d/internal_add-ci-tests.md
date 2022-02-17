@@ -1,0 +1,1 @@
+* Added initial CI tests for `update` command

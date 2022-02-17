@@ -30,6 +30,7 @@
   , "precise-datetime"
   , "prelude"
   , "strings"
+  , "transformers"
   , "tuples"
   , "versions"
   ]
