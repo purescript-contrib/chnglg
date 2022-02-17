@@ -5,7 +5,9 @@ import Prelude
 import Control.Monad.Reader (class MonadAsk, class MonadReader, ReaderT, ask)
 import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff, liftAff)
-import Effect.Class (class MonadEffect)
+import Node.Encoding (Encoding(..))
+import Node.FS.Aff as FSA
+import Node.Path (FilePath)
 import UpChangelog.Logger (Logger)
 
 type Env r =
@@ -38,4 +40,18 @@ logInfo msg = do
 logDebug :: forall r. String -> App r Unit
 logDebug msg = do
   env <- ask
-  liftAff $ env.logger.logDebug msg
+
+pathExists :: forall r. FilePath -> App r Boolean
+pathExists = liftAff <<< FSA.exists
+
+readTextFile :: forall r. FilePath -> App r String
+readTextFile = liftAff <<< FSA.readTextFile UTF8
+
+writeTextFile :: forall r. FilePath -> String -> App r Unit
+writeTextFile path = liftAff <<< FSA.writeTextFile UTF8 path
+
+readDir :: forall r. FilePath -> App r (Array FilePath)
+readDir = liftAff <<< FSA.readdir
+
+mkDir :: forall r. FilePath -> App r Unit
+mkDir = liftAff <<< FSA.mkdir
