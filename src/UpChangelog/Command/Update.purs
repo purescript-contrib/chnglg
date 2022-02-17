@@ -42,7 +42,10 @@ update :: App (cli :: UpdateArgs) Unit
 update = do
   checkFilePaths
   { cli: { changelogDir, changelogFile } } <- ask
-  entries <- (lines <<< _.stdout) <$> git "ls-tree" [ "--name-only", "HEAD", changelogDir <> sep ]
+  entries' <- (lines <<< _.stdout) <$> git "ls-tree" [ "--name-only", "HEAD", changelogDir <> sep ]
+  let
+    readmeFile = Path.concat [ changelogDir, Constants.readmeFile ]
+    entries = Array.filter (\s -> s /= "" || s /= readmeFile) entries'
   logInfo $ "# of entries found in changelog: " <> (show $ Array.length entries)
   logDebug $ "Entries found in changelog dir were:\n" <> String.joinWith "\n" entries
 
