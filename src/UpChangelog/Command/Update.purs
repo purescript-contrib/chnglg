@@ -81,7 +81,7 @@ update = do
 
     void $ git "add" [ changelogFile ]
     logDebug $ "Staged changelog file in git"
-    void $ git "rm" $ Array.cons "-q" $ map wrapQuotes entryFiles
+    void $ git "rm" $ map wrapQuotes entryFiles
     logDebug $ "Staged the deletion of the changelog entry files in git"
   where
   checkFilePaths = do
