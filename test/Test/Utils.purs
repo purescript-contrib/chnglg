@@ -8,9 +8,10 @@ import Data.Maybe (Maybe, fromMaybe)
 import Data.Posix.Signal (Signal(..))
 import Data.String as String
 import Effect (Effect)
-import Effect.Aff (Aff, Error, effectCanceler, makeAff, nonCanceler)
+import Effect.Aff (Aff, Error, effectCanceler, makeAff, message, nonCanceler)
 import Effect.Class (liftEffect)
 import Effect.Class.Console (log)
+import Effect.Exception (name, stack)
 import Node.Buffer as Buffer
 import Node.ChildProcess (ExecOptions)
 import Node.ChildProcess as ChildProcess
@@ -32,6 +33,10 @@ runCmd options@({ cwd: cwd' }) cmd args = makeAff \cb -> do
       log $ "Stderr: " <> stderr
     when (stdout /= "") do
       log $ "Stdout: " <> stderr
+    for_ res.error \e -> do
+      log $ "Error name: " <> name e
+      log $ "\n\nError msg:\n" <> message e
+      log $ "\n\nError stacktrace:\n" <> (show $ stack e)
     cb $ Right { stdout, stderr, error: res.error }
   pure $ effectCanceler do
     ChildProcess.kill SIGKILL proc
