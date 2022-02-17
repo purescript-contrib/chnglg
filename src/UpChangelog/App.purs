@@ -2,7 +2,7 @@ module UpChangelog.App where
 
 import Prelude
 
-import Control.Monad.Reader (class MonadAsk, class MonadReader, ReaderT, ask, runReaderT)
+import Control.Monad.Reader (class MonadAsk, class MonadReader, ReaderT, ask, runReaderT, withReaderT)
 import Effect (Effect)
 import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff, liftAff)
@@ -22,6 +22,9 @@ newtype App r a = App (ReaderT (Env r) Aff a)
 
 runApp :: forall r a. App r a -> Env r -> Aff a
 runApp (App rt) env = (runReaderT rt) env
+
+withApp :: forall r1 r2 a. (Env r2 -> Env r1) -> App r1 a -> App r2 a
+withApp f (App rt) = App $ withReaderT f rt
 
 derive newtype instance functorApp :: Functor (App r)
 derive newtype instance applyApp :: Apply (App r)

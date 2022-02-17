@@ -128,21 +128,32 @@ cliParser =
       , "purs-changelog update --repo owner/repo --explicit-release v1.2.3"
       ]
     githubRepoArg =
-      Arg.argument [ "--repo", "-r" ] "The Github repo in the `user/repo` format (e.g. `purescript/purescript-prelude`)."
-        # Arg.unformat "OWNER/REPO" validate
+      Arg.choose "repo"
+        [ map Left remoteArg
+        , map Right repoArg
+        ]
+        # Arg.default (Left Constants.gitRemoteName)
       where
-      validate s = do
-        let
-          { before: owner, after: slashRepo } = breakOn (Pattern "/") s
-          repo = String.drop 1 slashRepo
-          check =
-            [ repo == ""
-            , contains (Pattern "/") repo
-            ]
+      remoteArg = Arg.argument [ "--remote" ] desc
+        # Arg.unformat "REMOTE_NAME" Right
+        where
+        desc = "The git remote name to use to determine the repo to use. (default: `" <> Constants.gitRemoteName <> "`)"
+      repoArg = Arg.argument [ "--repo" ] desc
+        # Arg.unformat "OWNER/REPO" validate
+        where
+        desc = "The Github repo in the `user/repo` format (e.g. `purescript/purescript-prelude`)."
+        validate s = do
+          let
+            { before: owner, after: slashRepo } = breakOn (Pattern "/") s
+            repo = String.drop 1 slashRepo
+            check =
+              [ repo == ""
+              , contains (Pattern "/") repo
+              ]
 
-        when (Array.any identity check) do
-          throwError $ "Expected 'OWNER/REPO' but got '" <> s <> "'"
-        pure { owner, repo }
+          when (Array.any identity check) do
+            throwError $ "Expected 'OWNER/REPO' but got '" <> s <> "'"
+          pure { owner, repo }
 
     tokenArg = Arg.optional
       $ Arg.argument [ "--token", "-t" ]

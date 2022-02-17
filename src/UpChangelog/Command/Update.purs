@@ -22,9 +22,11 @@ import Data.MediaType (MediaType(..))
 import Data.Newtype (over, unwrap)
 import Data.Nullable as Nullable
 import Data.RFC3339String.Format (iso8601Format)
+import Data.Semigroup.Foldable (fold1)
 import Data.String (Pattern(..), toLower)
 import Data.String as String
-import Data.Traversable (for, for_, traverse)
+import Data.String.CodeUnits as SCU
+import Data.Traversable (fold, for, for_, traverse)
 import Data.Traversable as Foldable
 import Data.Tuple (Tuple(..), fst, snd)
 import Data.Version (Version, showVersion)
@@ -32,10 +34,13 @@ import Data.Version as Version
 import Effect.Aff.Class (liftAff)
 import Node.Path (sep)
 import Node.Path as Path
-import UpChangelog.App (App, die, logDebug, logInfo, pathExists, readDir, readTextFile, writeTextFile)
+import Text.Parsing.Parser (runParser)
+import Text.Parsing.Parser.Combinators (many1)
+import Text.Parsing.Parser.String (satisfy, string, whiteSpace)
+import UpChangelog.App (App, die, logDebug, logInfo, pathExists, readDir, readTextFile, withApp, writeTextFile)
 import UpChangelog.Constants as Constants
 import UpChangelog.Git (git)
-import UpChangelog.Types (ChangelogEntry(..), CommitType(..), GitLogCommit(..), UpdateArgs, VersionSource(..))
+import UpChangelog.Types (ChangelogEntry(..), CommitType(..), GHOwnerRepo, GitLogCommit(..), VersionSource(..), UpdateArgs)
 import UpChangelog.Utils (breakOn, breakOnEnd, breakOnSpace, commaSeparate, lines, toUtcDate, wrapQuotes)
 
 update :: App (cli :: UpdateArgs) Unit
@@ -158,7 +163,7 @@ updateEntry file = do
   let prNumbers = map (snd <<< _.data <<< unwrap) prCommits
   logDebug $ "For file, '" <> file <> "', got PR Numbers:" <> show prNumbers
 
-  prAuthors <- Array.nub <$> traverse lookupPRAuthor prNumbers
+  prAuthors <- getPrAuthors prNumbers
 
   let
     headerSuffix =
@@ -204,9 +209,59 @@ isInterestingCommit (GitLogCommit r) = case fst r.data of
       $ Array.all (\path -> "CHANGELOG.md" == path || (isJust $ String.stripPrefix (Pattern "CHANGELOG.d/") path))
       $ lines stdout
 
-lookupPRAuthor :: Int -> App (cli :: UpdateArgs) String
+getPrAuthors :: Array Int -> App (cli :: UpdateArgs) (Array String)
+getPrAuthors prNumbers = do
+  { cli: { github, mbToken } } <- ask
+  gh <- case github of
+    Left remoteName -> do
+      findRemote remoteName
+    Right repo -> do
+      pure repo
+  let
+    lookupPRAuthor' = withApp (\r -> { logger: r.logger, gh, mbToken }) <<< lookupPRAuthor
+  Array.nub <$> traverse lookupPRAuthor' prNumbers
+  where
+  findRemote name = do
+    remotes <- map (lines <<< _.stdout) $ git "remote" [ "-v" ]
+    let
+      mbRemote =
+        Array.head
+          $ Array.catMaybes
+          $ map (\s -> String.stripPrefix (Pattern name) s) remotes
+    case mbRemote of
+      Nothing -> do
+        die $ "Did not find a remote named '" <> name <> "'. See all available remotes via `git remote -v`"
+      Just url -> do
+        case runParser url remoteRepoParser of
+          Left e -> do
+            die $ "Found remote, but could not determine its repo. Parser error was: " <> show e
+          Right a -> pure a
+
+  remoteRepoParser = sshParser <|> httpsParser
+    where
+    -- git@github.com:purescript-contrib/purescript-up-changelog.git (fetch)
+    sshParser = do
+      void $ whiteSpace
+      void $ string "git@github.com:"
+      owner <- map fold1 $ many1 $ map SCU.singleton $ satisfy (\c -> c /= '/')
+      void $ satisfy (\c -> c == '/')
+      repo <- map fold1 $ many1 $ map SCU.singleton $ satisfy (\c -> c /= '.')
+      void $ string ".git"
+      pure { owner, repo }
+
+    -- https://github.com/purescript-contrib/purescript-up-changelog.git
+    httpsParser = do
+      void $ whiteSpace
+      void $ string "https://github.com/"
+      owner <- map fold $ many1 $ map SCU.singleton $ satisfy (\c -> c /= '/')
+      void $ satisfy (\c -> c == '/')
+      repo <- map fold $ many1 $ map SCU.singleton $ satisfy (\c -> c /= '.')
+      void $ string ".git"
+      pure { owner, repo }
+
+lookupPRAuthor :: Int -> App (gh :: GHOwnerRepo, mbToken :: Maybe String) String
 lookupPRAuthor prNum = do
-  { cli: { github: gh, mbToken } } <- ask
+  { gh, mbToken } <- ask
   let
     url = "https://api.github.com/repos/" <> gh.owner <> "/" <> gh.repo <> "/pulls/" <> show prNum
     headers = [ Accept $ MediaType "application/vnd.github.v3+json" ]

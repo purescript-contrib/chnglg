@@ -2,6 +2,9 @@ module UpChangelog.Constants where
 
 import Data.String as String
 
+gitRemoteName :: String
+gitRemoteName = "origin"
+
 -- | "CHANGELOG.md"
 changelogFile :: String
 changelogFile = "CHANGELOG.md"
