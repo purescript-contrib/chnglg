@@ -110,11 +110,12 @@ cliParser =
   updateCommand =
     Arg.command [ "update", "u" ] cmdDesc ado
       github <- githubRepoArg
+      mbToken <- tokenArg
       versionSource <- versionSourceArg
       changelogFile <- changelogFileArg
       changelogDir <- changelogDirArg
       Arg.flagHelp
-      in Update { github, versionSource, changelogFile, changelogDir }
+      in Update { github, versionSource, mbToken, changelogFile, changelogDir }
     where
     cmdDesc = joinWith "\n"
       [ "Updates the changelog file with a new releae entry based on files in the changelog directory"
@@ -142,6 +143,14 @@ cliParser =
         when (Array.any identity check) do
           throwError $ "Expected 'OWNER/REPO' but got '" <> s <> "'"
         pure { owner, repo }
+
+    tokenArg = Arg.optional
+      $ Arg.argument [ "--token", "-t" ]
+      $ String.joinWith " "
+          [ "An optional GitHub OAuth2 token for authenticating API requests."
+          , "The token does not need any permissions."
+          , "This program works without one but will start failing once GitHub's rate limit is reached."
+          ]
 
     versionSourceArg =
       Arg.choose "version"
