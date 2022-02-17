@@ -25,6 +25,7 @@
   , "node-process"
   , "node-streams"
   , "nullable"
+  , "parsing"
   , "partial"
   , "posix-types"
   , "precise-datetime"

@@ -134,6 +134,16 @@ spec = do
 
     it "update - no args - produces expected content" do
       withReset do
+        { error } <- pursChangelog "update" []
+        error `shouldSatisfy` isNothing
+        files <- readDir Constants.changelogDir
+        files `shouldEqual` [ Constants.readmeFile ]
+        logContent <- readFile Constants.changelogFile
+        expectedContent <- readFile correctFile
+        logContent `shouldEqual` expectedContent
+
+    it "update - repo arg - produces expected content" do
+      withReset do
         { error } <- pursChangelog "update" [ "--repo", repoArg ]
         error `shouldSatisfy` isNothing
         files <- readDir Constants.changelogDir

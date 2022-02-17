@@ -25,6 +25,7 @@
   , "node-path"
   , "node-process"
   , "nullable"
+  , "parsing"
   , "partial"
   , "posix-types"
   , "precise-datetime"
