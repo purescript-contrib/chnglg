@@ -3,8 +3,7 @@ module Test.Main where
 import Prelude
 
 import Data.Either (either)
-import Data.Foldable (for_)
-import Data.Maybe (isJust, isNothing)
+import Data.Maybe (isNothing)
 import Effect (Effect)
 import Effect.Aff (Aff, joinFiber, launchAff_, runAff, runAff_)
 import Effect.Class (liftEffect)
@@ -13,13 +12,12 @@ import Node.ChildProcess (defaultExecOptions)
 import Node.Encoding (Encoding(..))
 import Node.FS.Aff as FSA
 import Node.Path (FilePath, sep)
-import Node.Path as Path
 import Node.Process (chdir)
 import Test.Spec (SpecT, describe, it, sequential)
 import Test.Spec.Assertions (shouldEqual, shouldSatisfy)
 import Test.Spec.Reporter (consoleReporter)
 import Test.Spec.Runner (defaultConfig, runSpecT)
-import Test.Utils (delDir, mkdtempAff, runCmd)
+import Test.Utils (runCmd)
 import UpChangelog.Constants as Constants
 import UpChangelog.Utils (wrapQuotes)
 
@@ -31,87 +29,87 @@ spec :: SpecT Aff Unit Aff Unit
 spec = do
   let
     pursChangelog cmd args =
-      runCmd defaultExecOptions "node" $ [ "../../bin/index.js", cmd ] <> args
-    defaultReadme = Path.concat [ Constants.changelogDir, Constants.readmeFile ]
+      runCmd defaultExecOptions "node" $ [ "../../bin/index.js", "--log-debug", cmd ] <> args
+    -- defaultReadme = Path.concat [ Constants.changelogDir, Constants.readmeFile ]
     readFile = FSA.readTextFile UTF8
 
     readDir :: FilePath -> Aff (Array FilePath)
     readDir = FSA.readdir
 
-    withTempDir :: Aff Unit -> Aff Unit
-    withTempDir = withTempDir' <<< const
+  -- withTempDir :: Aff Unit -> Aff Unit
+  -- withTempDir = withTempDir' <<< const
 
-    withTempDir' :: (FilePath -> Aff Unit) -> Aff Unit
-    withTempDir' f = do
-      liftEffect $ chdir "test"
-      tempDir <- mkdtempAff "init"
-      liftEffect $ chdir tempDir
-      res <- f tempDir
-      liftEffect $ chdir ".."
-      delDir tempDir
-      liftEffect $ chdir ".."
-      pure res
+  -- withTempDir' :: (FilePath -> Aff Unit) -> Aff Unit
+  -- withTempDir' f = do
+  --   liftEffect $ chdir "test"
+  --   tempDir <- mkdtempAff "init"
+  --   liftEffect $ chdir tempDir
+  --   res <- f tempDir
+  --   liftEffect $ chdir ".."
+  --   delDir tempDir
+  --   liftEffect $ chdir ".."
+  --   pure res
 
-  describe "Init command" do
-    it "init - no args - files' content should match constants' content" do
-      withTempDir do
-        { error } <- pursChangelog "init" []
-        for_ error \e -> liftEffect $ throwException e
-        error `shouldSatisfy` isNothing
-        readmeContent <- readFile defaultReadme
-        logContent <- readFile Constants.changelogFile
-        readmeContent `shouldEqual` Constants.readmeContent
-        logContent `shouldEqual` Constants.changelogContent
+  -- describe "Init command" do
+  --   it "init - no args - files' content should match constants' content" do
+  --     withTempDir do
+  --       { error } <- pursChangelog "init" []
+  --       for_ error \e -> liftEffect $ throwException e
+  --       error `shouldSatisfy` isNothing
+  --       readmeContent <- readFile defaultReadme
+  --       logContent <- readFile Constants.changelogFile
+  --       readmeContent `shouldEqual` Constants.readmeContent
+  --       logContent `shouldEqual` Constants.changelogContent
 
-    it "init - does not ovewrite pre-existing files" do
-      withTempDir do
-        { error } <- pursChangelog "init" []
-        error `shouldSatisfy` isNothing
-        { error: error2 } <- pursChangelog "init" []
-        error2 `shouldSatisfy` isJust
+  --   it "init - does not ovewrite pre-existing files" do
+  --     withTempDir do
+  --       { error } <- pursChangelog "init" []
+  --       error `shouldSatisfy` isNothing
+  --       { error: error2 } <- pursChangelog "init" []
+  --       error2 `shouldSatisfy` isJust
 
-    it "init - force - ovewrites pre-existing files" do
-      withTempDir do
-        { error } <- pursChangelog "init" []
-        error `shouldSatisfy` isNothing
-        { error: error2 } <- pursChangelog "init" [ "--force" ]
-        error2 `shouldSatisfy` isNothing
+  --   it "init - force - ovewrites pre-existing files" do
+  --     withTempDir do
+  --       { error } <- pursChangelog "init" []
+  --       error `shouldSatisfy` isNothing
+  --       { error: error2 } <- pursChangelog "init" [ "--force" ]
+  --       error2 `shouldSatisfy` isNothing
 
-    it "init - custom file paths - files' content should match constants' content" do
-      withTempDir do
-        let
-          dir = "custom-dir"
-          file = "custom-file"
-        { error } <- pursChangelog "init" [ "--changelog-dir", dir, "--changelog-file", file ]
-        error `shouldSatisfy` isNothing
-        readmeContent <- readFile $ Path.concat [ dir, Constants.readmeFile ]
-        logContent <- readFile file
-        readmeContent `shouldEqual` Constants.readmeContent
-        logContent `shouldEqual` Constants.changelogContent
+  --   it "init - custom file paths - files' content should match constants' content" do
+  --     withTempDir do
+  --       let
+  --         dir = "custom-dir"
+  --         file = "custom-file"
+  --       { error } <- pursChangelog "init" [ "--changelog-dir", dir, "--changelog-file", file ]
+  --       error `shouldSatisfy` isNothing
+  --       readmeContent <- readFile $ Path.concat [ dir, Constants.readmeFile ]
+  --       logContent <- readFile file
+  --       readmeContent `shouldEqual` Constants.readmeContent
+  --       logContent `shouldEqual` Constants.changelogContent
 
-    it "init - custom file paths - does not overwrite pre-existing files" do
-      withTempDir do
-        let
-          dir = "custom-dir"
-          file = "custom-file"
-        { error } <- pursChangelog "init" [ "--changelog-dir", dir, "--changelog-file", file ]
-        error `shouldSatisfy` isNothing
-        { error: error2 } <- pursChangelog "init" [ "--changelog-dir", dir, "--changelog-file", file ]
-        error2 `shouldSatisfy` isJust
+  --   it "init - custom file paths - does not overwrite pre-existing files" do
+  --     withTempDir do
+  --       let
+  --         dir = "custom-dir"
+  --         file = "custom-file"
+  --       { error } <- pursChangelog "init" [ "--changelog-dir", dir, "--changelog-file", file ]
+  --       error `shouldSatisfy` isNothing
+  --       { error: error2 } <- pursChangelog "init" [ "--changelog-dir", dir, "--changelog-file", file ]
+  --       error2 `shouldSatisfy` isJust
 
-    it "init - custom file paths, force - overwrites pre-existing files" do
-      withTempDir do
-        let
-          dir = "custom-dir"
-          file = "custom-file"
-        { error } <- pursChangelog "init" [ "--changelog-dir", dir, "--changelog-file", file ]
-        error `shouldSatisfy` isNothing
-        { error: error2 } <- pursChangelog "init" [ "--force", "--changelog-dir", dir, "--changelog-file", file ]
-        error2 `shouldSatisfy` isNothing
+  --   it "init - custom file paths, force - overwrites pre-existing files" do
+  --     withTempDir do
+  --       let
+  --         dir = "custom-dir"
+  --         file = "custom-file"
+  --       { error } <- pursChangelog "init" [ "--changelog-dir", dir, "--changelog-file", file ]
+  --       error `shouldSatisfy` isNothing
+  --       { error: error2 } <- pursChangelog "init" [ "--force", "--changelog-dir", dir, "--changelog-file", file ]
+  --       error2 `shouldSatisfy` isNothing
 
   describe "Update command" do
     let
-      repoArg = "jordanmartinez/purescript-up-changelog"
+      repoArg = "purescript-contrib/purescript-up-changelog"
       correctFile = "Correct.md"
       withReset = withReset' Constants.changelogDir Constants.changelogFile
 
@@ -134,7 +132,7 @@ spec = do
 
     it "update - no args - produces expected content" do
       withReset do
-        { error } <- pursChangelog "update" [ "--repo", repoArg, "--log-debug" ]
+        { error } <- pursChangelog "update" [ "--repo", repoArg ]
         error `shouldSatisfy` isNothing
         files <- readDir Constants.changelogDir
         files `shouldEqual` [ Constants.readmeFile ]
