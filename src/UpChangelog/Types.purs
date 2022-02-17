@@ -33,6 +33,21 @@ type InitArgs =
   , changelogDir :: FilePath
   }
 
+data LoggerType
+  = None
+  | Error
+  | Info
+  | Debug
+
+derive instance Eq LoggerType
+derive instance Ord LoggerType
+
+type Logger m =
+  { logError :: String -> m Unit
+  , logInfo :: String -> m Unit
+  , logDebug :: String -> m Unit
+  }
+
 newtype ChangelogEntry = ChangelogEntry
   { file :: String
   , content :: String

@@ -11,7 +11,7 @@ import Effect.Exception (throw)
 import Node.Encoding (Encoding(..))
 import Node.FS.Aff as FSA
 import Node.Path (FilePath)
-import UpChangelog.Logger (Logger)
+import UpChangelog.Types (Logger)
 
 type Env r =
   { logger :: Logger Effect

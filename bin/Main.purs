@@ -14,16 +14,14 @@ import Data.Tuple (Tuple(..))
 import Data.Version as Version
 import Effect (Effect)
 import Effect.Aff (launchAff_, throwError)
-import Effect.Class.Console as Console
+import Effect.Console (log)
 import Node.Path (sep)
 import Node.Process as Process
 import UpChangelog.App (runApp)
 import UpChangelog.Command.Init (init)
 import UpChangelog.Command.Update (update)
 import UpChangelog.Constants as Constants
-import UpChangelog.Logger (LoggerType, mkLogger)
-import UpChangelog.Logger as Logger
-import UpChangelog.Types (InitArgs, UpdateArgs, VersionSource(..))
+import UpChangelog.Types (InitArgs, Logger, LoggerType(..), UpdateArgs, VersionSource(..))
 import UpChangelog.Utils (breakOn)
 
 main :: Effect Unit
@@ -31,7 +29,7 @@ main = do
   args <- Array.drop 2 <$> Process.argv
   case parseCliArgs args of
     Left err -> do
-      Console.log $ Arg.printArgError err
+      log $ Arg.printArgError err
       case err of
         Arg.ArgError _ Arg.ShowHelp ->
           setExitCode 0
@@ -53,6 +51,20 @@ main = do
 -- but the latter will terminate before those writes finish
 foreign import setExitCode :: Int -> Effect Unit
 
+mkLogger :: LoggerType -> Logger Effect
+mkLogger = case _ of
+  None -> default
+  Error -> default { logError = log }
+  Info -> default { logError = log, logInfo = log }
+  Debug -> { logError: log, logInfo: log, logDebug: log }
+  where
+  default :: Logger Effect
+  default =
+    { logError: const (pure unit)
+    , logInfo: const (pure unit)
+    , logDebug: const (pure unit)
+    }
+
 data Command
   = Init InitArgs
   | Update UpdateArgs
@@ -72,7 +84,7 @@ parseCliArgs = Arg.parseArgs
 
 cliParser :: Arg.ArgParser (Tuple LoggerType Command)
 cliParser =
-  Tuple <$> (loggerArg # Arg.default Logger.Error)
+  Tuple <$> (loggerArg # Arg.default Error)
     <*> cmdArg
   where
   loggerArg =
@@ -83,9 +95,9 @@ cliParser =
       ]
       <* Arg.flagHelp
     where
-    quiet = Logger.None <$ Arg.flag [ "--quiet", "-q" ] "Hide all logging"
-    info = Logger.Info <$ Arg.flag [ "--log-info" ] "Slightly increase logging output"
-    debug = Logger.Debug <$ Arg.flag [ "--log-debug" ] "Output all logging output"
+    quiet = None <$ Arg.flag [ "--quiet", "-q" ] "Hide all logging"
+    info = Info <$ Arg.flag [ "--log-info" ] "Slightly increase logging output"
+    debug = Debug <$ Arg.flag [ "--log-debug" ] "Output all logging output"
 
   cmdArg =
     Arg.choose "command"
