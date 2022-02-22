@@ -31,7 +31,7 @@ type UpdateArgs =
   }
 
 type InitArgs =
-  { force :: Boolean
+  { overwriteReadme :: Boolean
   , changelogFile :: FilePath
   , changelogDir :: FilePath
   }

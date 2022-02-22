@@ -203,11 +203,11 @@ cliParser =
 
   initCommand =
     Arg.command [ "init", "i" ] "Sets up the repo so that the `update` command will work in the future." ado
-      force <- forceArg
+      overwriteReadme <- overwriteReadmeArg
       changelogFile <- changelogFileArg
       changelogDir <- changelogDirArg
       Arg.flagHelp
-      in Init { force, changelogFile, changelogDir }
+      in Init { overwriteReadme, changelogFile, changelogDir }
 
   changelogFileArg =
     Arg.argument [ "--changelog-file" ] desc
@@ -221,8 +221,8 @@ cliParser =
     where
     desc = "The file path to the directory containing changelog entry files. (defaults to `" <> Constants.changelogDir <> "`)"
 
-  forceArg =
-    Arg.flag [ "--force", "-f" ] desc
+  overwriteReadmeArg =
+    Arg.flag [ "--overwrite-dir-readme" ] desc
       # Arg.boolean
     where
-    desc = "When enabled, overwrites the " <> Constants.changelogDir <> sep <> Constants.readmeFile <> " file if it exists."
+    desc = "When enabled, overwrites the '" <> Constants.changelogDir <> sep <> Constants.readmeFile <> "' file, if it exists."
