@@ -3,21 +3,22 @@ module UpChangelog.Command.Init where
 import Prelude
 
 import Control.Monad.Reader (ask)
-import Data.Array as Array
+import Data.Monoid.Conj (Conj(..))
+import Data.Newtype (unwrap)
+import Data.String (Pattern(..))
 import Data.String as String
 import Effect.Class (liftEffect)
-import Effect.Exception (throw)
-import Node.Path (FilePath, sep)
+import Node.Path (FilePath)
 import Node.Path as Path
-import UpChangelog.App (App, logDebug, logInfo, mkDir, pathExists, writeTextFile)
+import UpChangelog.App (App, die, logDebug, logError, logInfo, mkDir, pathExists, readTextFile, writeTextFile)
 import UpChangelog.Constants as Constants
 import UpChangelog.Git (git)
 import UpChangelog.Types (InitArgs)
-import UpChangelog.Utils (commaSeparate)
+import UpChangelog.Utils (breakOn)
 
 init :: App (cli :: InitArgs) Unit
 init = do
-  { cli: { changelogFile, changelogDir } } <- ask
+  { cli: { changelogFile, changelogDir, overwriteReadme } } <- ask
   ifM (pathExists changelogDir)
     do
       logDebug $ "Changelog dir, '" <> changelogDir <> "' already exists."
@@ -27,34 +28,52 @@ init = do
       mkdirP absChangelogDir
       logInfo $ "Changelog dir, '" <> changelogDir <> "' created."
   let readme = Path.concat [ changelogDir, Constants.readmeFile ]
-  notAdded1 <- attemptToAddFile readme Constants.readmeContent
-  notAdded2 <- attemptToAddFile changelogFile Constants.changelogContent
-  let notAdded = notAdded1 <> notAdded2
-  unless (Array.null notAdded) do
-    liftEffect $ throw $ alreadyExistsWarning notAdded
-      [ changelogDir <> sep <> Constants.readmeFile
-      , changelogFile
-      ]
-  where
-  attemptToAddFile file content = do
-    { cli: { force } } <- ask
+  dirReadme <- do
+    let
+      file = readme
+      content = Constants.readmeContent
     fileExists <- pathExists file
-    if (fileExists && not force) then do
-      logDebug $ "File, '" <> file <> "', exists but --force flag not used. Not overwriting."
-      pure [ file ]
+    if (fileExists && not overwriteReadme) then do
+      logError $ "File, '" <> file <> "', exists but --overwrite-readme flag not used. Not overwriting."
+      pure $ Conj false
     else do
-      logDebug $ "File, '" <> file <> "', either does not exist or --force flag was used. Overwriting."
+      logDebug $ "File, '" <> file <> "', either does not exist or --overwrite-readme flag was used. Overwriting."
       writeTextFile file content
       void $ git "add" [ file ]
       logDebug $ "Staged file, '" <> file <> "'."
-      pure []
-
-  alreadyExistsWarning files generatedFiles = String.joinWith " "
-    [ "Not overwriting the following file(s) that already exist: "
-    , commaSeparate files <> "."
-    , "You can rerun this command with the --force flag to overwrite all files generated"
-    , "by this command (i.e. " <> commaSeparate generatedFiles <> ")"
-    ]
+      pure $ Conj true
+  logFile <- do
+    let
+      file = changelogFile
+      content = Constants.changelogContent
+    fileExists <- pathExists file
+    if fileExists then do
+      logInfo $ "File, '" <> file <> "', exists. Not overwriting."
+      logDebug $ "Checking whether file's content can be separated between the preamble and release entries..."
+      fileContent <- readTextFile file
+      let { before, after } = breakOn (Pattern "\n## ") fileContent
+      if (before /= "" && after /= "") then do
+        logInfo "File's content will be split properly when calling `update` command in future."
+        pure $ Conj true
+      else do
+        logError $ "Could not find a match for pattern: '\n## '. Wil not properly split changelog when `update` command is used later."
+        logDebug $ String.joinWith " "
+          [ "A changelog file needs to have some initial content (called the preamble)"
+          , "followed by the separator (a line starting with '## ') for the `update`"
+          , " command to function correctly."
+          ]
+        pure $ Conj false
+    else do
+      logDebug $ "File, '" <> file <> "', does not exist. Creating."
+      writeTextFile file content
+      void $ git "add" [ file ]
+      logDebug $ "Staged file, '" <> file <> "'."
+      pure $ Conj true
+  unless (unwrap $ dirReadme <> logFile) do
+    die $ String.joinWith "\n"
+      [ "Failed to initialize repo, so that calling `update` command in future works properly."
+      , "Rerun this command with `--log-debug` to see more context."
+      ]
 
 mkdirP :: FilePath -> App (cli :: InitArgs) Unit
 mkdirP path = mkdirP' 0 path
