@@ -74,7 +74,7 @@ spec = do
       withTempDir do
         { error } <- pursChangelog "init" []
         error `shouldSatisfy` isNothing
-        { error: error2 } <- pursChangelog "init" [ "--force" ]
+        { error: error2 } <- pursChangelog "init" [ "--overwrite-dir-readme" ]
         error2 `shouldSatisfy` isNothing
 
     it "init - custom file paths - files' content should match constants' content" do
@@ -106,7 +106,7 @@ spec = do
           file = "custom-file"
         { error } <- pursChangelog "init" [ "--changelog-dir", dir, "--changelog-file", file ]
         error `shouldSatisfy` isNothing
-        { error: error2 } <- pursChangelog "init" [ "--force", "--changelog-dir", dir, "--changelog-file", file ]
+        { error: error2 } <- pursChangelog "init" [ "--overwrite-dir-readme", "--changelog-dir", dir, "--changelog-file", file ]
         error2 `shouldSatisfy` isNothing
 
   describe "Update command" do
