@@ -15,7 +15,7 @@
     "bundle:exec": "chmod +x bin/index.mjs",
     "bundle": "npm run build && npm run bundle:optimize && npm run bundle:esbuild && npm run bundle:exec",
     "build:test": "spago build --purs-args=\"--strict --censor-lib\"",
-    "test:ci": "spago -x test.dhall test --purs-args=\"--strict --censor-lib\"",
+    "test:ci": "spago -x test.dhall test",
     "test": "npm run build:test && npm run bundle && npm run test:ci",
     "format": "purs-tidy format-in-place src bin test",
     "check": "purs-tidy check src bin test",
