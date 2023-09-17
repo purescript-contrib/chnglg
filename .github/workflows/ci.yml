@@ -52,7 +52,7 @@ jobs:
         run: npm run bundle
 
       - name: "Run tests"
-        run: spago -x test.dhall build
+        run: npm run test:ci
 
       - name: Verify formatting (Ubuntu only)
         if: runner.os == 'Linux'

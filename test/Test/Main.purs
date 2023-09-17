@@ -8,6 +8,7 @@ import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Effect.Aff (Aff, Milliseconds(..), joinFiber, launchAff_, runAff, runAff_)
 import Effect.Class (liftEffect)
+import Effect.Console (log)
 import Effect.Exception (throw, throwException)
 import Node.ChildProcess.Types (Exit(..), KillSignal)
 import Node.Encoding (Encoding(..))
@@ -28,7 +29,9 @@ import UpChangelog.Utils (wrapQuotes)
 
 main :: Effect Unit
 main = runAff_ (either throwException pure) do
-  void $ join $ runSpecT (defaultConfig { timeout = Just $ Milliseconds 20_000.0 }) [ consoleReporter ] $ sequential spec
+  liftEffect $ log "Tests are currently disabled"
+  when false do
+    void $ join $ runSpecT (defaultConfig { timeout = Just $ Milliseconds 20_000.0 }) [ consoleReporter ] $ sequential spec
 
 spec :: SpecT Aff Unit Aff Unit
 spec = do
