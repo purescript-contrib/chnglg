@@ -26,9 +26,6 @@ breakOnEnd ptn s = maybe { before: "", after: s } (flip String.splitAt s) mbIdx
 lines :: String -> Array String
 lines = String.split (Pattern "\n")
 
-wrapQuotes :: String -> String
-wrapQuotes s = "\"" <> s <> "\""
-
 commaSeparate :: Array String -> String
 commaSeparate = case _ of
   [] -> ""

@@ -158,8 +158,7 @@ spec = do
           reset pwd
           void $ liftEffect $ throwException e
         reset pwd = do
-          let
-            entries = map wrapQuotes [ changeDir <> sep, changeFile ]
+          let entries = [ changeDir <> sep, changeFile ]
           void $ _.getResult =<< execa "git" ([ "checkout", "HEAD", "--" ] <> entries) identity
           liftEffect $ chdir pwd
 

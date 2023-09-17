@@ -36,7 +36,7 @@ import UpChangelog.App (App, die, logDebug, logInfo, pathExists, readDir, readTe
 import UpChangelog.Constants as Constants
 import UpChangelog.Git (git)
 import UpChangelog.Types (ChangelogEntry(..), CommitType(..), GHOwnerRepo, GitLogCommit(..), VersionSource(..), UpdateArgs)
-import UpChangelog.Utils (breakOn, breakOnEnd, breakOnSpace, commaSeparate, lines, toUtcDate, wrapQuotes)
+import UpChangelog.Utils (breakOn, breakOnEnd, breakOnSpace, commaSeparate, lines, toUtcDate)
 
 update :: App (cli :: UpdateArgs) Unit
 update = do
@@ -62,7 +62,7 @@ update = do
   if (Array.null entryFiles) then do
     die $ "Cannot update changelog file as there aren't any valid entries in '" <> changelogDir <> "'."
   else do
-    changes <- git "status" $ [ "-s", "--" ] <> (map wrapQuotes $ Array.cons changelogFile entryFiles)
+    changes <- git "status" $ [ "-s", "--" ] <> Array.cons changelogFile entryFiles
     unless (changes.stdout == "") $ die $
       "You have uncommitted changes to changelog files. " <>
         "Please commit, stash, or revert them before running this script."
@@ -87,7 +87,7 @@ update = do
 
     void $ git "add" [ changelogFile ]
     logDebug $ "Staged changelog file in git"
-    void $ git "rm" $ map wrapQuotes entryFiles
+    void $ git "rm" entryFiles
     logDebug $ "Staged the deletion of the changelog entry files in git"
   where
   checkFilePaths = do
@@ -118,7 +118,7 @@ updateEntry :: String -> App (cli :: UpdateArgs) ChangelogEntry
 updateEntry file = do
   allCommits <- do
     -- 2c78eb614cb1f3556737900e57d0e7395158791e 2021-11-17T13:27:33-08:00 Title of PR (#4121)
-    lns <- map (lines <<< _.stdout) $ git "log" [ "-m", "--follow", "--format=\"%H %cI %s\"", wrapQuotes file ]
+    lns <- map (lines <<< _.stdout) $ git "log" [ "-m", "--follow", "--format=\"%H %cI %s\"", file ]
     logDebug $ "For file, '" <> file <> "', got commits:\n" <> String.joinWith "\n" lns
     mbRes <- for lns \str -> do
       let
