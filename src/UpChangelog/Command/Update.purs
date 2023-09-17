@@ -116,9 +116,6 @@ processEntriesStartingWith prefix arr = do
 
 updateEntry :: String -> App (cli :: UpdateArgs) ChangelogEntry
 updateEntry file = do
-  logDebug $ "Reading content of file entry: " <> file
-  { before: header, after: body } <- map (breakOn (Pattern "\n") <<< String.trim) $ (readTextFile <<< Path.normalize) file
-
   allCommits <- do
     -- 2c78eb614cb1f3556737900e57d0e7395158791e 2021-11-17T13:27:33-08:00 Title of PR (#4121)
     lns <- map (lines <<< _.stdout) $ git "log" [ "-m", "--follow", "--format=\"%H %cI %s\"", wrapQuotes file ]
@@ -159,6 +156,9 @@ updateEntry file = do
   logDebug $ "For file, '" <> file <> "', got PR Numbers:" <> show prNumbers
 
   prAuthors <- getPrAuthors prNumbers
+
+  logDebug $ "Reading content of file entry: " <> file
+  { before: header, after: body } <- map (breakOn (Pattern "\n") <<< String.trim) $ (readTextFile <<< Path.normalize) file
 
   let
     headerSuffix =
