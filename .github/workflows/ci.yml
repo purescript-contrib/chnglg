@@ -17,7 +17,7 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           # Fetch all history and tags to ensure we get all commits made
           # in the PR. Otherwise, we only fetch the commit that
@@ -25,11 +25,11 @@ jobs:
           # This causes the PR numbers to not appear in the commit titles
           # and causes the `update` command's test to fail.
           fetch-depth: 0
-      - uses: actions/setup-node@v1
+      - uses: actions/setup-node@v3
         with:
-          node-version: "12"
-      - uses: purescript-contrib/setup-purescript@main
-      - uses: actions/cache@v2
+          node-version: "lts/*"
+
+      - uses: actions/cache@v3
         # This cache uses the .dhall files to know when it should reinstall
         # and rebuild packages. It caches both the installed packages from
         # the `.spago` directory and compilation artifacts from the `output`
