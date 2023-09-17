@@ -6,7 +6,9 @@ git checkout origin/master
 git switch -c new-release
 
 npm version minor # major, minor, patch, etc.
-git add package.json
+VERSION=$(jq '.version' package.json)
+sed -E "s/version = \"[^\"]+\"/version = ${VERSION}/" bin/Main.purs
+git add package.json bin/Main.purs
 git commit -m "Update version"
 
 npm run bundle

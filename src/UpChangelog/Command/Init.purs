@@ -8,9 +8,8 @@ import Data.Newtype (unwrap)
 import Data.String (Pattern(..))
 import Data.String as String
 import Effect.Class (liftEffect)
-import Node.Path (FilePath)
 import Node.Path as Path
-import UpChangelog.App (App, die, logDebug, logError, logInfo, mkDir, pathExists, readTextFile, writeTextFile)
+import UpChangelog.App (App, die, logDebug, logError, logInfo, mkDir', pathExists, readTextFile, writeTextFile)
 import UpChangelog.Constants as Constants
 import UpChangelog.Git (git)
 import UpChangelog.Types (InitArgs)
@@ -25,7 +24,7 @@ init = do
     do
       logInfo $ "Changelog dir, '" <> changelogDir <> "' does not exist. Creating..."
       absChangelogDir <- liftEffect $ Path.resolve [] changelogDir
-      mkdirP absChangelogDir
+      mkDir' absChangelogDir
       logInfo $ "Changelog dir, '" <> changelogDir <> "' created."
   let readme = Path.concat [ changelogDir, Constants.readmeFile ]
   dirReadme <- do
@@ -74,18 +73,3 @@ init = do
       [ "Failed to initialize repo, so that calling `update` command in future works properly."
       , "Rerun this command with `--log-debug` to see more context."
       ]
-
-mkdirP :: FilePath -> App (cli :: InitArgs) Unit
-mkdirP path = mkdirP' 0 path
-  where
-  mkdirP' n p = do
-    ifM (pathExists p)
-      do
-        if n /= 0 then do
-          logDebug $ "Directory, '" <> p <> "', alreacy exists."
-        else
-          pure unit
-      do
-        logDebug $ "Directory, '" <> p <> "', does not exist."
-        mkdirP' (n + 1) $ Path.dirname p
-        mkDir p

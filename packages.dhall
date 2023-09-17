@@ -1,6 +1,6 @@
 let upstream =
-      https://github.com/purescript/package-sets/releases/download/psc-0.14.5-20220203/packages.dhall
-        sha256:f8905bf5d7ce9d886cf4ef1c5893ab55de0b30c82c2b4137f272d075000fbc50
+      https://github.com/purescript/package-sets/releases/download/psc-0.15.10-20230917/packages.dhall
+        sha256:5929d1e39acd3a54a84a2ca9a39a160cb038878f87df37783f16353e705d50fa
 
 in  upstream
   with argparse-basic =

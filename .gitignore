@@ -10,3 +10,5 @@
 /.psa*
 /.spago
 /bin/index.js
+/.vscode
+/output-es/
