@@ -1,26 +1,4 @@
 #!/usr/bin/env node
-var __create = Object.create;
-var __defProp = Object.defineProperty;
-var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
-var __getOwnPropNames = Object.getOwnPropertyNames;
-var __getProtoOf = Object.getPrototypeOf;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __copyProps = (to, from, except, desc) => {
-  if (from && typeof from === "object" || typeof from === "function") {
-    for (let key of __getOwnPropNames(from))
-      if (!__hasOwnProp.call(to, key) && key !== except)
-        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
-  }
-  return to;
-};
-var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
-  // If the importer is in node compatibility mode or this is not an ESM
-  // file that has been converted to a CommonJS file using a Babel-
-  // compatible transform (i.e. "__esModule" has not been set), then set
-  // "default" to the CommonJS "module.exports" for node compatibility.
-  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
-  mod
-));
 
 // output-es/runtime.js
 function* range(lo, hi) {
@@ -6121,20 +6099,20 @@ var log2 = function(s) {
 };
 
 // output-es/Node.Path/foreign.js
-var import_path = __toESM(require("path"), 1);
-var normalize = import_path.default.normalize;
+import path from "path";
+var normalize = path.normalize;
 function concat2(segments) {
-  return import_path.default.join.apply(this, segments);
+  return path.join.apply(this, segments);
 }
 function resolve(from) {
-  return (to) => () => import_path.default.resolve.apply(this, from.concat([to]));
+  return (to) => () => path.resolve.apply(this, from.concat([to]));
 }
-var basename = import_path.default.basename;
-var extname = import_path.default.extname;
-var sep = import_path.default.sep;
-var delimiter = import_path.default.delimiter;
-var parse = import_path.default.parse;
-var isAbsolute = import_path.default.isAbsolute;
+var basename = path.basename;
+var extname = path.extname;
+var sep = path.sep;
+var delimiter = path.delimiter;
+var parse = path.parse;
+var isAbsolute = path.isAbsolute;
 
 // output-es/Data.Nullable/foreign.js
 var nullImpl = null;
@@ -6226,9 +6204,9 @@ var union = (m) => mutate((s) => foldM1((s$p) => (k) => (v) => () => {
 var fold2 = /* @__PURE__ */ _foldM(applyFlipped);
 
 // output-es/Node.EventEmitter/foreign.js
-var import_node_events = __toESM(require("node:events"), 1);
+import EventEmitter from "node:events";
 var newImpl = function() {
-  return new import_node_events.default();
+  return new EventEmitter();
 };
 var unsafeEmitFn = (emitter) => emitter.emit.bind(emitter);
 var listenerCountImpl = (emitter, eventName) => emitter.listenerCount(eventName);
@@ -6317,34 +6295,34 @@ var fromString2 = (v) => {
 };
 
 // output-es/Node.Process/foreign.js
-var import_process = __toESM(require("process"), 1);
-var abortImpl = import_process.default.abort ? () => import_process.default.abort() : null;
-var argv = () => import_process.default.argv.slice();
-var channelRefImpl = import_process.default.channel && import_process.default.channel.ref ? () => import_process.default.channel.ref() : null;
-var channelUnrefImpl = import_process.default.channel && import_process.default.channel.unref ? () => import_process.default.channel.unref() : null;
-var chdirImpl = (dir) => import_process.default.chdir(dir);
-var cwd = () => import_process.default.cwd();
-var debugPort = import_process.default.debugPort;
-var disconnectImpl = import_process.default.disconnect ? () => import_process.default.disconnect() : null;
-var getEnv = () => Object.assign({}, import_process.default.env);
-var execPath = () => import_process.default.execPath;
+import process from "process";
+var abortImpl = process.abort ? () => process.abort() : null;
+var argv = () => process.argv.slice();
+var channelRefImpl = process.channel && process.channel.ref ? () => process.channel.ref() : null;
+var channelUnrefImpl = process.channel && process.channel.unref ? () => process.channel.unref() : null;
+var chdirImpl = (dir) => process.chdir(dir);
+var cwd = () => process.cwd();
+var debugPort = process.debugPort;
+var disconnectImpl = process.disconnect ? () => process.disconnect() : null;
+var getEnv = () => Object.assign({}, process.env);
+var execPath = () => process.execPath;
 var setExitCodeImpl = (code) => {
-  import_process.default.exitCode = code;
+  process.exitCode = code;
 };
-var getExitCodeImpl = () => import_process.default.exitCode;
-var getGidImpl = () => import_process.default.getgid();
-var getUidImpl = () => import_process.default.getuid();
-var killStrImpl = (pid2, sig) => import_process.default.kill(pid2, sig);
-var pid = import_process.default.pid;
-var platformStr = import_process.default.platform;
-var ppid = import_process.default.ppid;
-var stdin = import_process.default.stdin;
-var stdout = import_process.default.stdout;
-var stderr = import_process.default.stderr;
-var stdinIsTTY = import_process.default.stdinIsTTY;
-var stdoutIsTTY = import_process.default.stdoutIsTTY;
-var stderrIsTTY = import_process.default.stderrIsTTY;
-var version = import_process.default.version;
+var getExitCodeImpl = () => process.exitCode;
+var getGidImpl = () => process.getgid();
+var getUidImpl = () => process.getuid();
+var killStrImpl = (pid2, sig) => process.kill(pid2, sig);
+var pid = process.pid;
+var platformStr = process.platform;
+var ppid = process.ppid;
+var stdin = process.stdin;
+var stdout = process.stdout;
+var stderr = process.stderr;
+var stdinIsTTY = process.stdinIsTTY;
+var stdoutIsTTY = process.stdoutIsTTY;
+var stderrIsTTY = process.stderrIsTTY;
+var version = process.version;
 
 // output-es/Node.Process/index.js
 var identity9 = (x) => x;
@@ -6958,14 +6936,14 @@ var toDateTime = /* @__PURE__ */ toDateTimeImpl((y) => (mo) => (d) => (h) => (mi
 ));
 
 // output-es/Node.Buffer.Immutable/foreign.js
-var import_node_buffer = require("node:buffer");
-var alloc = (size3) => import_node_buffer.Buffer.alloc(size3);
+import { Buffer as Buffer2 } from "node:buffer";
+var alloc = (size3) => Buffer2.alloc(size3);
 var size2 = (buff) => buff.length;
-var fromStringImpl2 = (str, encoding) => import_node_buffer.Buffer.from(str, encoding);
+var fromStringImpl2 = (str, encoding) => Buffer2.from(str, encoding);
 var readImpl = (ty, offset, buf) => buf["read" + ty](offset);
 var toStringImpl = (enc, buff) => buff.toString(enc);
 var sliceImpl2 = (start, end, buff) => buff.slice(start, end);
-var concatToLength = (buffs, totalLength) => import_node_buffer.Buffer.concat(buffs, totalLength);
+var concatToLength = (buffs, totalLength) => Buffer2.concat(buffs, totalLength);
 
 // output-es/Node.Buffer.Immutable/index.js
 var toString2 = (enc) => (buf) => toStringImpl(
@@ -7085,14 +7063,14 @@ var fromString3 = (str) => (enc) => fromStringImpl2(
 );
 
 // output-es/Node.FS.Constants/foreign.js
-var import_node_fs = require("node:fs");
-var f_OK = import_node_fs.constants.F_OK;
-var r_OK = import_node_fs.constants.R_OK;
-var w_OK = import_node_fs.constants.W_OK;
-var x_OK = import_node_fs.constants.X_OK;
-var copyFile_EXCL = import_node_fs.constants.COPYFILE_EXCL;
-var copyFile_FICLONE = import_node_fs.constants.COPYFILE_FICLONE;
-var copyFile_FICLONE_FORCE = import_node_fs.constants.COPYFILE_FICLONE_FORCE;
+import { constants } from "node:fs";
+var f_OK = constants.F_OK;
+var r_OK = constants.R_OK;
+var w_OK = constants.W_OK;
+var x_OK = constants.X_OK;
+var copyFile_EXCL = constants.COPYFILE_EXCL;
+var copyFile_FICLONE = constants.COPYFILE_FICLONE;
+var copyFile_FICLONE_FORCE = constants.COPYFILE_FICLONE_FORCE;
 
 // output-es/Node.FS.Constants/index.js
 var $FileFlags = (tag) => tag;
@@ -7113,7 +7091,34 @@ var permsToString = (v) => "0" + permToString(v.u) + permToString(v.g) + permToS
 var permsAll = /* @__PURE__ */ (() => ({ u: semiringPerm.one, g: semiringPerm.one, o: semiringPerm.one }))();
 
 // output-es/Node.FS.Async/foreign.js
-var import_node_fs2 = require("node:fs");
+import {
+  access,
+  copyFile,
+  mkdtemp,
+  rename,
+  truncate,
+  chown,
+  chmod,
+  stat,
+  lstat,
+  link,
+  symlink,
+  readlink,
+  realpath,
+  unlink,
+  rmdir,
+  rm,
+  mkdir,
+  readdir,
+  utimes,
+  readFile,
+  writeFile,
+  appendFile,
+  open,
+  read as read3,
+  write as write2,
+  close
+} from "node:fs";
 
 // output-es/Node.FS.Async/index.js
 var handleCallback = (cb) => (err, a) => {
@@ -7128,7 +7133,7 @@ var handleCallback = (cb) => (err, a) => {
 };
 var mkdir$p = (file) => (v) => (cb) => {
   const $0 = { recursive: v.recursive, mode: permsToString(v.mode) };
-  return () => (0, import_node_fs2.mkdir)(file, $0, handleCallback(cb));
+  return () => mkdir(file, $0, handleCallback(cb));
 };
 var readTextFile = (encoding) => (file) => (cb) => {
   const $0 = {
@@ -7163,9 +7168,9 @@ var readTextFile = (encoding) => (file) => (cb) => {
       fail();
     })()
   };
-  return () => (0, import_node_fs2.readFile)(file, $0, handleCallback(cb));
+  return () => readFile(file, $0, handleCallback(cb));
 };
-var readdir2 = (file) => (cb) => () => (0, import_node_fs2.readdir)(file, handleCallback(cb));
+var readdir2 = (file) => (cb) => () => readdir(file, handleCallback(cb));
 var writeTextFile = (encoding) => (file) => (buff) => (cb) => {
   const $0 = {
     encoding: (() => {
@@ -7199,7 +7204,7 @@ var writeTextFile = (encoding) => (file) => (buff) => (cb) => {
       fail();
     })()
   };
-  return () => (0, import_node_fs2.writeFile)(file, buff, $0, handleCallback(cb));
+  return () => writeFile(file, buff, $0, handleCallback(cb));
 };
 
 // output-es/Node.FS.Aff/index.js
@@ -7235,7 +7240,36 @@ var toAff3 = (f) => (a) => (b) => (c) => {
 };
 
 // output-es/Node.FS.Sync/foreign.js
-var import_node_fs3 = require("node:fs");
+import {
+  accessSync,
+  copyFileSync,
+  mkdtempSync,
+  renameSync,
+  truncateSync,
+  chownSync,
+  chmodSync,
+  statSync,
+  lstatSync,
+  linkSync,
+  symlinkSync,
+  readlinkSync,
+  realpathSync,
+  unlinkSync,
+  rmdirSync,
+  rmSync,
+  mkdirSync,
+  readdirSync,
+  utimesSync,
+  readFileSync,
+  writeFileSync,
+  appendFileSync,
+  existsSync,
+  openSync,
+  readSync,
+  writeSync,
+  fsyncSync,
+  closeSync
+} from "node:fs";
 
 // output-es/Node.FS.Sync/index.js
 var fdRead2 = (fd) => (buff) => (off) => (len) => (pos) => {
@@ -7248,7 +7282,7 @@ var fdRead2 = (fd) => (buff) => (off) => (len) => (pos) => {
     }
     fail();
   })();
-  return () => (0, import_node_fs3.readSync)(fd, buff, off, len, $0);
+  return () => readSync(fd, buff, off, len, $0);
 };
 var fdOpen2 = (file) => (flags) => (mode) => {
   const $0 = (() => {
@@ -7299,7 +7333,7 @@ var fdOpen2 = (file) => (flags) => (mode) => {
     }
     fail();
   })();
-  return () => (0, import_node_fs3.openSync)(file, $0, $1);
+  return () => openSync(file, $0, $1);
 };
 
 // output-es/Control.Monad.Reader.Trans/index.js
@@ -7721,7 +7755,26 @@ var exitH = /* @__PURE__ */ $EventHandle(
 );
 
 // output-es/Node.UnsafeChildProcess.Unsafe/foreign.js
-var import_node_child_process = require("node:child_process");
+import {
+  exec,
+  exec as exec2,
+  exec as exec3,
+  exec as exec4,
+  execFile,
+  execFile as execFile2,
+  execFile as execFile3,
+  execFile as execFile4,
+  spawn,
+  spawn as spawn2,
+  execSync,
+  execSync as execSync2,
+  execFileSync,
+  execFileSync as execFileSync2,
+  spawnSync,
+  spawnSync as spawnSync2,
+  fork,
+  fork as fork2
+} from "node:child_process";
 var unsafeStdin = (cp) => cp.stdin;
 var unsafeStdout = (cp) => cp.stdout;
 var unsafeStderr = (cp) => cp.stderr;
@@ -7873,7 +7926,7 @@ var spawn$p = (cmd) => (args) => (buildOpts) => {
       fail();
     })()
   };
-  return () => import_node_child_process.spawn(cmd, args, $0);
+  return () => spawn2(cmd, args, $0);
 };
 
 // output-es/Node.ChildProcess.Aff/index.js
@@ -8021,7 +8074,7 @@ var gidImpl = (s) => s.gid;
 var identity11 = (x) => x;
 var coreWindows = {
   isExe: (path2) => (options) => makeAff((cb) => () => {
-    import_node_fs2.stat(
+    stat(
       path2,
       handleCallback((v) => {
         if (v.tag === 0) {
@@ -8099,7 +8152,7 @@ var coreWindows = {
     return nonCanceler;
   }),
   isExeSync: (path2) => (options) => () => {
-    const statsObj = import_node_fs3.statSync(path2);
+    const statsObj = statSync(path2);
     if (!isSymbolicLinkImpl(statsObj) && !isFileImpl(statsObj)) {
       return false;
     }
@@ -8165,7 +8218,7 @@ var coreWindows = {
 };
 var coreNonWindows = {
   isExe: (path2) => (options) => makeAff((cb) => () => {
-    import_node_fs2.stat(
+    stat(
       path2,
       handleCallback((v) => {
         if (v.tag === 0) {
@@ -8277,7 +8330,7 @@ var coreNonWindows = {
     return nonCanceler;
   }),
   isExeSync: (path2) => (options) => () => {
-    const stats = import_node_fs3.statSync(path2);
+    const stats = statSync(path2);
     const $0 = unsafeClamp(floor(uidImpl(stats)));
     const $1 = unsafeClamp(floor(modeImpl(stats)));
     const gid = unsafeClamp(floor(gidImpl(stats)));
@@ -8551,8 +8604,8 @@ var whichSync = (cmd) => (options) => {
 };
 
 // output-es/Node.Library.Execa.CrossSpawn/foreign.js
-var import_process2 = __toESM(require("process"), 1);
-var processHasChdir = () => import_process2.default.chdir !== void 0;
+import process2 from "process";
+var processHasChdir = () => process2.chdir !== void 0;
 
 // output-es/Node.Library.Execa.CrossSpawn/index.js
 var for_2 = /* @__PURE__ */ for_(applicativeEffect)(foldableMaybe);
@@ -8688,7 +8741,7 @@ var parse3 = (command2) => (args) => (options) => {
           catchException((x) => () => $Either(0, x))(() => {
             const resource = $2();
             const b = fdRead2(resource)($1)(0)(150)($Maybe(1, 0))();
-            import_node_fs3.closeSync(resource);
+            closeSync(resource);
             return $Either(1, b);
           })();
           const $3 = shebangCommand(toString2(UTF8)($1));
@@ -8771,7 +8824,7 @@ var parse3 = (command2) => (args) => (options) => {
 var concat$p = (arrs) => (n) => (v) => concatToLength(arrs, n);
 
 // output-es/Node.Stream/foreign.js
-var import_node_stream = __toESM(require("node:stream"), 1);
+import stream from "node:stream";
 var readChunkImpl = (useBuffer, useString, chunk) => {
   if (chunk instanceof Buffer) {
     return useBuffer(chunk);
@@ -8787,8 +8840,8 @@ var pipeImpl = (r, w) => r.pipe(w);
 var writeImpl = (w, buf) => w.write(buf);
 var endImpl = (w) => w.end();
 var destroyImpl = (w) => w.destroy();
-var pipelineImpl = (src, transforms, dst, cb) => import_node_stream.default.pipeline([src, ...transforms, dst], cb);
-var newPassThrough = () => new import_node_stream.default.PassThrough({ objectMode: false });
+var pipelineImpl = (src, transforms, dst, cb) => stream.pipeline([src, ...transforms, dst], cb);
+var newPassThrough = () => new stream.PassThrough({ objectMode: false });
 
 // output-es/Node.Stream/index.js
 var dataH = /* @__PURE__ */ $EventHandle(
@@ -9242,7 +9295,7 @@ var onExit$p = (cb) => (options) => {
       v$1.countRef.value = $1 + 1 | 0;
       const signalListeners = $$for(signals)((sig) => {
         const $2 = on($EventHandle(toUpper(sig), identity9))(() => {
-          const listenersLen = listenerCountImpl(import_process.default, sig);
+          const listenersLen = listenerCountImpl(process, sig);
           const count = v$1.countRef.value;
           if (listenersLen === count) {
             unload();
@@ -9272,7 +9325,7 @@ var onExit$p = (cb) => (options) => {
             }
             return killStrImpl(pid, isWin && sig === "SIGHUP" ? "SIGINT" : sig);
           }
-        })(import_process.default);
+        })(process);
         const $3 = catchException((x) => () => $Either(0, x))(() => {
           const rm2 = $2();
           const $32 = catchException((x) => () => $Either(0, x))(() => {
@@ -9367,7 +9420,7 @@ var stripFinalNewlineBuf = (b) => {
 };
 
 // output-es/Node.Library.HumanSignals/foreign.js
-var import_os = require("os");
+import { constants as constants2 } from "os";
 
 // output-es/Node.Library.HumanSignals/index.js
 var $StandardSource = (tag) => tag;
@@ -9416,7 +9469,7 @@ var Other = /* @__PURE__ */ $StandardSource(
 var signals2 = /* @__PURE__ */ (() => {
   const byName = {
     SIGHUP: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGHUP", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGHUP", constants2.signals);
       return {
         name: "SIGHUP",
         number: (() => {
@@ -9444,7 +9497,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGINT: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGINT", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGINT", constants2.signals);
       return {
         name: "SIGINT",
         number: (() => {
@@ -9472,7 +9525,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGQUIT: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGQUIT", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGQUIT", constants2.signals);
       return {
         name: "SIGQUIT",
         number: (() => {
@@ -9500,7 +9553,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGILL: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGILL", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGILL", constants2.signals);
       return {
         name: "SIGILL",
         number: (() => {
@@ -9528,7 +9581,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGTRAP: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGTRAP", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGTRAP", constants2.signals);
       return {
         name: "SIGTRAP",
         number: (() => {
@@ -9556,7 +9609,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGABRT: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGABRT", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGABRT", constants2.signals);
       return {
         name: "SIGABRT",
         number: (() => {
@@ -9584,7 +9637,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGIOT: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGIOT", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGIOT", constants2.signals);
       return {
         name: "SIGIOT",
         number: (() => {
@@ -9612,7 +9665,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGBUS: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGBUS", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGBUS", constants2.signals);
       return {
         name: "SIGBUS",
         number: (() => {
@@ -9640,7 +9693,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGEMT: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGEMT", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGEMT", constants2.signals);
       return {
         name: "SIGEMT",
         number: (() => {
@@ -9668,7 +9721,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGFPE: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGFPE", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGFPE", constants2.signals);
       return {
         name: "SIGFPE",
         number: (() => {
@@ -9696,7 +9749,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGKILL: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGKILL", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGKILL", constants2.signals);
       return {
         name: "SIGKILL",
         number: (() => {
@@ -9724,7 +9777,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGUSR1: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGUSR1", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGUSR1", constants2.signals);
       return {
         name: "SIGUSR1",
         number: (() => {
@@ -9752,7 +9805,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGSEGV: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGSEGV", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGSEGV", constants2.signals);
       return {
         name: "SIGSEGV",
         number: (() => {
@@ -9780,7 +9833,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGUSR2: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGUSR2", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGUSR2", constants2.signals);
       return {
         name: "SIGUSR2",
         number: (() => {
@@ -9808,7 +9861,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGPIPE: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGPIPE", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGPIPE", constants2.signals);
       return {
         name: "SIGPIPE",
         number: (() => {
@@ -9836,7 +9889,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGALRM: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGALRM", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGALRM", constants2.signals);
       return {
         name: "SIGALRM",
         number: (() => {
@@ -9864,7 +9917,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGTERM: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGTERM", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGTERM", constants2.signals);
       return {
         name: "SIGTERM",
         number: (() => {
@@ -9892,7 +9945,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGSTKFLT: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGSTKFLT", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGSTKFLT", constants2.signals);
       return {
         name: "SIGSTKFLT",
         number: (() => {
@@ -9920,7 +9973,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGCHLD: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGCHLD", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGCHLD", constants2.signals);
       return {
         name: "SIGCHLD",
         number: (() => {
@@ -9948,7 +10001,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGCLD: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGCLD", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGCLD", constants2.signals);
       return {
         name: "SIGCLD",
         number: (() => {
@@ -9976,7 +10029,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGCONT: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGCONT", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGCONT", constants2.signals);
       return {
         name: "SIGCONT",
         number: (() => {
@@ -10004,7 +10057,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGSTOP: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGSTOP", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGSTOP", constants2.signals);
       return {
         name: "SIGSTOP",
         number: (() => {
@@ -10032,7 +10085,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGTSTP: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGTSTP", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGTSTP", constants2.signals);
       return {
         name: "SIGTSTP",
         number: (() => {
@@ -10060,7 +10113,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGTTIN: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGTTIN", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGTTIN", constants2.signals);
       return {
         name: "SIGTTIN",
         number: (() => {
@@ -10088,7 +10141,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGBREAK: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGBREAK", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGBREAK", constants2.signals);
       return {
         name: "SIGBREAK",
         number: (() => {
@@ -10116,7 +10169,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGTTOU: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGTTOU", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGTTOU", constants2.signals);
       return {
         name: "SIGTTOU",
         number: (() => {
@@ -10144,7 +10197,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGURG: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGURG", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGURG", constants2.signals);
       return {
         name: "SIGURG",
         number: (() => {
@@ -10172,7 +10225,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGXCPU: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGXCPU", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGXCPU", constants2.signals);
       return {
         name: "SIGXCPU",
         number: (() => {
@@ -10200,7 +10253,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGXFSZ: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGXFSZ", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGXFSZ", constants2.signals);
       return {
         name: "SIGXFSZ",
         number: (() => {
@@ -10228,7 +10281,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGVTALRM: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGVTALRM", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGVTALRM", constants2.signals);
       return {
         name: "SIGVTALRM",
         number: (() => {
@@ -10256,7 +10309,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGPROF: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGPROF", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGPROF", constants2.signals);
       return {
         name: "SIGPROF",
         number: (() => {
@@ -10284,7 +10337,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGWINCH: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGWINCH", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGWINCH", constants2.signals);
       return {
         name: "SIGWINCH",
         number: (() => {
@@ -10312,7 +10365,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGIO: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGIO", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGIO", constants2.signals);
       return {
         name: "SIGIO",
         number: (() => {
@@ -10340,7 +10393,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGPOLL: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGPOLL", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGPOLL", constants2.signals);
       return {
         name: "SIGPOLL",
         number: (() => {
@@ -10368,7 +10421,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGINFO: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGINFO", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGINFO", constants2.signals);
       return {
         name: "SIGINFO",
         number: (() => {
@@ -10396,7 +10449,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGPWR: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGPWR", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGPWR", constants2.signals);
       return {
         name: "SIGPWR",
         number: (() => {
@@ -10424,7 +10477,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGSYS: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGSYS", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGSYS", constants2.signals);
       return {
         name: "SIGSYS",
         number: (() => {
@@ -10452,7 +10505,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGUNUSED: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGUNUSED", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGUNUSED", constants2.signals);
       return {
         name: "SIGUNUSED",
         number: (() => {
@@ -10480,7 +10533,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGRT1: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT1", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT1", constants2.signals);
       return {
         name: "SIGRT1",
         number: (() => {
@@ -10508,7 +10561,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGRT2: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT2", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT2", constants2.signals);
       return {
         name: "SIGRT2",
         number: (() => {
@@ -10536,7 +10589,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGRT3: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT3", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT3", constants2.signals);
       return {
         name: "SIGRT3",
         number: (() => {
@@ -10564,7 +10617,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGRT4: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT4", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT4", constants2.signals);
       return {
         name: "SIGRT4",
         number: (() => {
@@ -10592,7 +10645,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGRT5: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT5", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT5", constants2.signals);
       return {
         name: "SIGRT5",
         number: (() => {
@@ -10620,7 +10673,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGRT6: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT6", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT6", constants2.signals);
       return {
         name: "SIGRT6",
         number: (() => {
@@ -10648,7 +10701,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGRT7: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT7", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT7", constants2.signals);
       return {
         name: "SIGRT7",
         number: (() => {
@@ -10676,7 +10729,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGRT8: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT8", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT8", constants2.signals);
       return {
         name: "SIGRT8",
         number: (() => {
@@ -10704,7 +10757,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGRT9: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT9", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT9", constants2.signals);
       return {
         name: "SIGRT9",
         number: (() => {
@@ -10732,7 +10785,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGRT10: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT10", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT10", constants2.signals);
       return {
         name: "SIGRT10",
         number: (() => {
@@ -10760,7 +10813,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGRT11: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT11", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT11", constants2.signals);
       return {
         name: "SIGRT11",
         number: (() => {
@@ -10788,7 +10841,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGRT12: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT12", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT12", constants2.signals);
       return {
         name: "SIGRT12",
         number: (() => {
@@ -10816,7 +10869,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGRT13: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT13", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT13", constants2.signals);
       return {
         name: "SIGRT13",
         number: (() => {
@@ -10844,7 +10897,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGRT14: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT14", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT14", constants2.signals);
       return {
         name: "SIGRT14",
         number: (() => {
@@ -10872,7 +10925,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGRT15: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT15", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT15", constants2.signals);
       return {
         name: "SIGRT15",
         number: (() => {
@@ -10900,7 +10953,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGRT16: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT16", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT16", constants2.signals);
       return {
         name: "SIGRT16",
         number: (() => {
@@ -10928,7 +10981,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGRT17: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT17", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT17", constants2.signals);
       return {
         name: "SIGRT17",
         number: (() => {
@@ -10956,7 +11009,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGRT18: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT18", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT18", constants2.signals);
       return {
         name: "SIGRT18",
         number: (() => {
@@ -10984,7 +11037,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGRT19: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT19", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT19", constants2.signals);
       return {
         name: "SIGRT19",
         number: (() => {
@@ -11012,7 +11065,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGRT20: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT20", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT20", constants2.signals);
       return {
         name: "SIGRT20",
         number: (() => {
@@ -11040,7 +11093,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGRT21: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT21", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT21", constants2.signals);
       return {
         name: "SIGRT21",
         number: (() => {
@@ -11068,7 +11121,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGRT22: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT22", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT22", constants2.signals);
       return {
         name: "SIGRT22",
         number: (() => {
@@ -11096,7 +11149,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGRT23: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT23", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT23", constants2.signals);
       return {
         name: "SIGRT23",
         number: (() => {
@@ -11124,7 +11177,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGRT24: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT24", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT24", constants2.signals);
       return {
         name: "SIGRT24",
         number: (() => {
@@ -11152,7 +11205,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGRT25: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT25", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT25", constants2.signals);
       return {
         name: "SIGRT25",
         number: (() => {
@@ -11180,7 +11233,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGRT26: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT26", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT26", constants2.signals);
       return {
         name: "SIGRT26",
         number: (() => {
@@ -11208,7 +11261,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGRT27: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT27", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT27", constants2.signals);
       return {
         name: "SIGRT27",
         number: (() => {
@@ -11236,7 +11289,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGRT28: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT28", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT28", constants2.signals);
       return {
         name: "SIGRT28",
         number: (() => {
@@ -11264,7 +11317,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGRT29: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT29", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT29", constants2.signals);
       return {
         name: "SIGRT29",
         number: (() => {
@@ -11292,7 +11345,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGRT30: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT30", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT30", constants2.signals);
       return {
         name: "SIGRT30",
         number: (() => {
@@ -11320,7 +11373,7 @@ var signals2 = /* @__PURE__ */ (() => {
       };
     })(),
     SIGRT31: (() => {
-      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT31", import_os.constants.signals);
+      const mbConstantSignal = _lookup(Nothing, Just, "SIGRT31", constants2.signals);
       return {
         name: "SIGRT31",
         number: (() => {
@@ -11353,7 +11406,7 @@ var signals2 = /* @__PURE__ */ (() => {
     byName,
     byNumber: foldlArray((acc) => (number) => {
       const $0 = find((v) => {
-        const $02 = _lookup(Nothing, Just, v.name, import_os.constants.signals);
+        const $02 = _lookup(Nothing, Just, v.name, constants2.signals);
         return $02.tag === 1 && number === $02._1;
       })(signalsArray);
       const $1 = find((x) => number === x.number)(signalsArray);
@@ -12124,7 +12177,6 @@ var toUtcDate = (str) => {
 };
 
 // output-es/UpChangelog.Utils/index.js
-var wrapQuotes = (s) => '"' + s + '"';
 var lines = /* @__PURE__ */ split("\n");
 var commaSeparate = (v) => {
   if (v.length === 0) {
@@ -12174,7 +12226,7 @@ var init = /* @__PURE__ */ (() => bindApp.bind(monadAskEnvApp.ask)((v) => {
       recursive: true,
       mode: permsAll
     })))(() => logInfo("Changelog dir, '" + $0 + "' created."))));
-    return bindApp.bind(monadEffectApp.liftEffect(() => import_node_fs3.existsSync($0)))((cond$p) => {
+    return bindApp.bind(monadEffectApp.liftEffect(() => existsSync($0)))((cond$p) => {
       if (cond$p) {
         return $3;
       }
@@ -12182,7 +12234,7 @@ var init = /* @__PURE__ */ (() => bindApp.bind(monadAskEnvApp.ask)((v) => {
     });
   })())(() => {
     const readme = concat2([$0, "README.md"]);
-    return bindApp.bind(bindApp.bind(monadEffectApp.liftEffect(() => import_node_fs3.existsSync(readme)))((fileExists) => {
+    return bindApp.bind(bindApp.bind(monadEffectApp.liftEffect(() => existsSync(readme)))((fileExists) => {
       if (fileExists && !$2) {
         return bindApp.bind(logError("File, '" + readme + "', exists but --overwrite-readme flag not used. Not overwriting."))(() => applicativeApp.pure(false));
       }
@@ -12192,7 +12244,7 @@ var init = /* @__PURE__ */ (() => bindApp.bind(monadAskEnvApp.ask)((v) => {
         const $4 = git("add")([readme]);
         return (x) => $3($4(x));
       })())(() => bindApp.bind(logDebug("Staged file, '" + readme + "'."))(() => applicativeApp.pure(true)))));
-    }))((dirReadme) => bindApp.bind(bindApp.bind(monadEffectApp.liftEffect(() => import_node_fs3.existsSync($1)))((fileExists) => {
+    }))((dirReadme) => bindApp.bind(bindApp.bind(monadEffectApp.liftEffect(() => existsSync($1)))((fileExists) => {
       if (fileExists) {
         return bindApp.bind(logInfo("File, '" + $1 + "', exists. Not overwriting."))(() => bindApp.bind(logDebug("Checking whether file's content can be separated between the preamble and release entries..."))(() => bindApp.bind(monadAffApp.liftAff(toAff2(readTextFile)(UTF8)($1)))((fileContent) => {
           const v1 = breakOn("\n## ")(fileContent);
@@ -13925,7 +13977,7 @@ var $$for2 = /* @__PURE__ */ (() => {
   const traverse2 = traversableArray.traverse(applicativeApp);
   return (x) => (f) => traverse2(f)(x);
 })();
-var show5 = /* @__PURE__ */ showArrayImpl(showIntImpl);
+var show4 = /* @__PURE__ */ showArrayImpl(showIntImpl);
 var parsePRNumber = (x) => {
   const $0 = stripPrefix("Merge pull request #")(x);
   const $1 = (() => {
@@ -14045,7 +14097,7 @@ var getVersion = /* @__PURE__ */ (() => {
       return bindApp.bind((() => {
         const $3 = monadApp.Applicative0();
         const $4 = monadEffectApp.liftEffect(throwException(error("`package.json` file was not found using path '" + $2 + "'. Cannot use it to get the version.")));
-        return monadApp.Bind1().bind(monadEffectApp.liftEffect(() => import_node_fs3.existsSync($2)))((b) => {
+        return monadApp.Bind1().bind(monadEffectApp.liftEffect(() => existsSync($2)))((b) => {
           if (!b) {
             return $4;
           }
@@ -14093,7 +14145,7 @@ var getVersion = /* @__PURE__ */ (() => {
       return bindApp.bind((() => {
         const $3 = monadApp.Applicative0();
         const $4 = monadEffectApp.liftEffect(throwException(error("A `*.cabal` file was not found using path '" + $2 + "'. Cannot use it to get the version.")));
-        return monadApp.Bind1().bind(monadEffectApp.liftEffect(() => import_node_fs3.existsSync($2)))((b) => {
+        return monadApp.Bind1().bind(monadEffectApp.liftEffect(() => existsSync($2)))((b) => {
           if (!b) {
             return $4;
           }
@@ -14292,38 +14344,39 @@ var getPrAuthors = (prNumbers) => bindApp.bind(monadAskEnvApp.ask)((v) => {
     return (x) => $1($2(x));
   });
 });
-var updateEntry = (file) => bindApp.bind(bindApp.bind(git("log")(["-m", "--follow", '--format="%H %cI %s"', '"' + file + '"']))((result) => bindApp.bind(logDebug("Exit status: " + showExit.show(result.exit)))(() => bindApp.bind(logDebug("Command: " + result.escapedCommand))(() => {
-  const lns = lines(result.stdout);
-  return bindApp.bind(logDebug("For file, '" + file + "', got commits:\n" + joinWith("\n")(lns)))(() => bindApp.bind($$for2(lns)((str) => {
-    const v = breakOn(" ")(str);
-    const v1 = breakOn(" ")(drop(length2(take2(1)(v.after)))(v.after));
-    return applicativeApp.pure((() => {
-      const $0 = nullable(toUtcDate(v1.before), Nothing, Just);
-      if ($0.tag === 1) {
-        const $1 = unformat2(iso8601Format)($0._1);
-        if ($1.tag === 0) {
-          return Nothing;
-        }
-        if ($1.tag === 1) {
-          return $Maybe(
-            1,
-            { data: drop(length2(take2(1)(v1.after)))(v1.after), hash: v.before, time: $1._1 }
-          );
-        }
-        fail();
-      }
-      if ($0.tag === 0) {
+var updateEntry = (file) => bindApp.bind(bindApp.bind((() => {
+  const $0 = _map((x) => lines(x.stdout));
+  const $1 = git("log")(["-m", "--follow", '--format="%H %cI %s"', file]);
+  return (x) => $0($1(x));
+})())((lns) => bindApp.bind(logDebug("For file, '" + file + "', got commits:\n" + joinWith("\n")(lns)))(() => bindApp.bind($$for2(lns)((str) => {
+  const v = breakOn(" ")(str);
+  const v1 = breakOn(" ")(drop(length2(take2(1)(v.after)))(v.after));
+  return applicativeApp.pure((() => {
+    const $0 = nullable(toUtcDate(v1.before), Nothing, Just);
+    if ($0.tag === 1) {
+      const $1 = unformat2(iso8601Format)($0._1);
+      if ($1.tag === 0) {
         return Nothing;
       }
+      if ($1.tag === 1) {
+        return $Maybe(
+          1,
+          { data: drop(length2(take2(1)(v1.after)))(v1.after), hash: v.before, time: $1._1 }
+        );
+      }
       fail();
-    })());
-  }))((mbRes) => {
-    const $0 = sortWith(ordDateTime)((x) => x.time)(mapMaybe((x) => x)(mbRes));
-    if ($0.length > 0) {
-      return applicativeApp.pure($0);
     }
-    return monadEffectApp.liftEffect(throwException(error("No commits for file: " + file)));
-  }));
+    if ($0.tag === 0) {
+      return Nothing;
+    }
+    fail();
+  })());
+}))((mbRes) => {
+  const $0 = sortWith(ordDateTime)((x) => x.time)(mapMaybe((x) => x)(mbRes));
+  if ($0.length > 0) {
+    return applicativeApp.pure($0);
+  }
+  return monadEffectApp.liftEffect(throwException(error("No commits for file: " + file)));
 }))))((allCommits) => bindApp.bind((() => {
   const $0 = _map(catMaybes);
   const $1 = $$for2(allCommits)((glc) => {
@@ -14340,7 +14393,7 @@ var updateEntry = (file) => bindApp.bind(bindApp.bind(git("log")(["-m", "--follo
   return (x) => $0($1(x));
 })())((prCommits) => {
   const prNumbers = arrayMap((x) => x.data._2)(prCommits);
-  return bindApp.bind(logDebug("For file, '" + file + "', got PR Numbers:" + show5(prNumbers)))(() => bindApp.bind(getPrAuthors(prNumbers))((prAuthors) => bindApp.bind(logDebug("Reading content of file entry: " + file))(() => bindApp.bind((() => {
+  return bindApp.bind(logDebug("For file, '" + file + "', got PR Numbers:" + show4(prNumbers)))(() => bindApp.bind(getPrAuthors(prNumbers))((prAuthors) => bindApp.bind(logDebug("Reading content of file entry: " + file))(() => bindApp.bind((() => {
     const $0 = _map((x) => breakOn("\n")(trim(x)));
     const $1 = monadAffApp.liftAff(toAff2(readTextFile)(UTF8)(normalize(file)));
     return (x) => $0($1(x));
@@ -14393,7 +14446,7 @@ var update = /* @__PURE__ */ (() => bindApp.bind(bindApp.bind(monadAskEnvApp.ask
     return applicativeApp.pure();
   }));
   const $3 = monadEffectApp.liftEffect(throwException(error("Cannot update changelog file as changelog directory, '" + $0.changelogDir + "', does not exist.")));
-  return bindApp.bind(monadEffectApp.liftEffect(() => import_node_fs3.existsSync($1)))((cond$p) => {
+  return bindApp.bind(monadEffectApp.liftEffect(() => existsSync($1)))((cond$p) => {
     if (cond$p) {
       return $2;
     }
@@ -14420,7 +14473,7 @@ var update = /* @__PURE__ */ (() => bindApp.bind(bindApp.bind(monadAskEnvApp.ask
       if (entryFiles.length === 0) {
         return monadEffectApp.liftEffect(throwException(error("Cannot update changelog file as there aren't any valid entries in '" + $0 + "'.")));
       }
-      return bindApp.bind(git("status")(["-s", "--", ...arrayMap(wrapQuotes)([$1, ...entryFiles])]))((changes) => bindApp.bind((() => {
+      return bindApp.bind(git("status")(["-s", "--", $1, ...entryFiles]))((changes) => bindApp.bind((() => {
         const $2 = changes.stdout === "";
         const $3 = monadEffectApp.liftEffect(throwException(error("You have uncommitted changes to changelog files. Please commit, stash, or revert them before running this script.")));
         if (!$2) {
@@ -14445,7 +14498,7 @@ var update = /* @__PURE__ */ (() => bindApp.bind(bindApp.bind(monadAskEnvApp.ask
         })())(() => bindApp.bind(logDebug("Staged changelog file in git"))(() => bindApp.bind((() => {
           const $4 = _map((v$1) => {
           });
-          const $5 = git("rm")(arrayMap(wrapQuotes)(entryFiles));
+          const $5 = git("rm")(entryFiles);
           return (x) => $4($5(x));
         })())(() => logDebug("Staged the deletion of the changelog entry files in git")))))));
       }))));
@@ -14706,5 +14759,5 @@ var main = () => {
   fail();
 };
 
-// bin/index.prod.js
+// bin/index.prod.mjs
 main();

@@ -11,7 +11,7 @@
   "scripts": {
     "build": "spago -x bin/spago.dhall build --purs-args=\"--strict --censor-lib -g corefn,js\"",
     "bundle:optimize": "purs-backend-es build --int-tags",
-    "bundle:esbuild": "esbuild --bundle --outfile=bin/index.mjs --platform=node --charset=utf8 bin/index.prod.mjs",
+    "bundle:esbuild": "esbuild --bundle --outfile=bin/index.mjs --platform=node --format=esm --charset=utf8 bin/index.prod.mjs",
     "bundle:exec": "chmod +x bin/index.mjs",
     "bundle": "npm run build && npm run bundle:optimize && npm run bundle:esbuild && npm run bundle:exec",
     "build:test": "spago build --purs-args=\"--strict --censor-lib\"",
