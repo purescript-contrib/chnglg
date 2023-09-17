@@ -9,9 +9,9 @@
     "bin/index.js"
   ],
   "scripts": {
-    "build": "spago -x bin/spago.dhall build --purs-args=\"--strict --censor-lib\"",
-    "bundle:spago": "spago -x bin/spago.dhall bundle-app -m Main -t bundle/Main/index.js",
-    "bundle:esbuild": "esbuild --bundle --outfile=bin/index.js --platform=node --minify --charset=utf8 bundle/Main/index.js",
+    "build": "spago -x bin/spago.dhall build --purs-args=\"--strict --censor-lib -g corefn,js\"",
+    "bundle:purs-backend-es": "purs-backend-es build --int-tags",
+    "bundle:esbuild": "esbuild --bundle --outfile=bin/index.js --platform=node --minify --charset=utf8 output-es/Main/index.js",
     "bundle:shebang": "(echo '#!/usr/bin/env node' > bin/tmp.js) && (cat bin/index.js >> bin/tmp.js) && mv bin/tmp.js bin/index.js",
     "bundle:exec": "chmod +x bin/index.js",
     "bundle": "npm run build && npm run bundle:spago && npm run bundle:esbuild && npm run bundle:shebang && npm run bundle:exec",
@@ -36,14 +36,12 @@
     "url": "https://github.com/jordanmartinez/purescript-up-changelog/issues"
   },
   "homepage": "https://github.com/jordanmartinez/purescript-up-changelog#readme",
-  "dependencies": {
-    "xhr2": "^0.2.1"
-  },
   "devDependencies": {
-    "esbuild": "^0.14.21",
-    "purescript": "^0.14.5",
+    "esbuild": "^0.19.3",
+    "purescript": "^0.15.10",
     "purescript-psa": "^0.8.2",
-    "purs-tidy": "^0.7.0",
-    "spago": "^0.20.7"
+    "purs-backend-es": "^1.4.2",
+    "purs-tidy": "^0.10.0",
+    "spago": "^0.21.0"
   }
 }
