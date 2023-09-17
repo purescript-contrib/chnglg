@@ -192,7 +192,7 @@ cloneTestRepo = do
     repoArg = "JordanMartinez/purescript-up-changelog-test"
     testRepo = "https://github.com/" <> repoArg
     branchName = "master"
-  result <- _.getResult =<< execa "git" [ "clone", "--depth", "1", "--branch", branchName, testRepo, testRepoDir ] identity
+  result <- _.getResult =<< execa "git" [ "clone", "--branch", branchName, testRepo, testRepoDir ] identity
   case result.exit of
     Normally 0 ->
       log $ result.stdout <> "\n" <> result.stderr
