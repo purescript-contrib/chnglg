@@ -144,20 +144,21 @@ spec = do
 
       withReset' :: FilePath -> FilePath -> Aff Unit -> Aff Unit
       withReset' changeDir changeFile f = do
+        pwd <- liftEffect Process.cwd
         liftEffect $ chdir "test/project"
-        fiber <- liftEffect $ runAff (either resetRethrow pure) f
+        fiber <- liftEffect $ runAff (either (resetRethrow pwd) pure) f
         res <- joinFiber fiber
-        reset
+        reset pwd
         pure res
         where
-        resetRethrow e = launchAff_ do
-          reset
+        resetRethrow pwd e = launchAff_ do
+          reset pwd
           void $ liftEffect $ throwException e
-        reset = do
+        reset pwd = do
           let
             entries = map wrapQuotes [ changeDir <> sep, changeFile ]
           void $ _.getResult =<< execa "git" ([ "checkout", "HEAD", "--" ] <> entries) identity
-          liftEffect $ chdir "../.."
+          liftEffect $ chdir pwd
 
     it "update - no args - produces expected content" do
       withReset do
