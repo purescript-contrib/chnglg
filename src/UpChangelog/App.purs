@@ -10,6 +10,8 @@ import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Exception (throw)
 import Node.Encoding (Encoding(..))
 import Node.FS.Aff as FSA
+import Node.FS.Perms (permsAll)
+import Node.FS.Sync as FSSync
 import Node.Path (FilePath)
 import UpChangelog.Types (Logger)
 
@@ -55,7 +57,7 @@ die :: forall r a. String -> App r a
 die = liftEffect <<< throw
 
 pathExists :: forall r. FilePath -> App r Boolean
-pathExists = liftAff <<< FSA.exists
+pathExists = liftEffect <<< FSSync.exists
 
 readTextFile :: forall r. FilePath -> App r String
 readTextFile = liftAff <<< FSA.readTextFile UTF8
@@ -68,3 +70,6 @@ readDir = liftAff <<< FSA.readdir
 
 mkDir :: forall r. FilePath -> App r Unit
 mkDir = liftAff <<< FSA.mkdir
+
+mkDir' :: forall r. FilePath -> App r Unit
+mkDir' path = liftAff $ FSA.mkdir' path { recursive: true, mode: permsAll }

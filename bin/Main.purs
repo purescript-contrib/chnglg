@@ -32,11 +32,11 @@ main = do
       log $ Arg.printArgError err
       case err of
         Arg.ArgError _ Arg.ShowHelp ->
-          setExitCode 0
+          Process.setExitCode 0
         Arg.ArgError _ (Arg.ShowInfo _) ->
-          setExitCode 0
+          Process.setExitCode 0
         _ ->
-          setExitCode 1
+          Process.setExitCode 1
     Right (Tuple logType cmd) -> do
       case cmd of
         Update options -> do

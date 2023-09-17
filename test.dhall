@@ -1,34 +1,46 @@
+let config = ./spago.dhall
+in
 { name = "my-project"
 , dependencies =
   [ "aff"
+  , "affjax"
+  , "affjax-node"
   , "argonaut-codecs"
   , "arrays"
+  , "console"
   , "control"
   , "datetime"
   , "effect"
   , "either"
   , "exceptions"
   , "fetch"
+  , "fetch-argonaut"
   , "foldable-traversable"
-  , "foreign"
   , "formatters"
+  , "http-methods"
   , "integers"
   , "maybe"
+  , "media-types"
   , "newtype"
   , "node-buffer"
+  , "node-child-process"
   , "node-execa"
   , "node-fs"
   , "node-path"
+  , "node-process"
+  , "node-streams"
   , "nullable"
   , "parsing"
   , "partial"
+  , "posix-types"
   , "precise-datetime"
   , "prelude"
+  , "spec"
   , "strings"
   , "transformers"
   , "tuples"
   , "versions"
-  ]
-, packages = ./packages.dhall
-, sources = [ "src/**/*.purs" ]
+  ] # config.dependencies
+, packages = config.packages
+, sources = [ "test/**/*.purs" ] # config.sources
 }

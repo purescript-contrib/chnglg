@@ -3,23 +3,26 @@ module Test.Main where
 import Prelude
 
 import Data.Either (either)
-import Data.Foldable (for_)
-import Data.Maybe (Maybe(..), isJust, isNothing)
+import Data.Lens (Prism', preview, prism')
+import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Effect.Aff (Aff, Milliseconds(..), joinFiber, launchAff_, runAff, runAff_)
 import Effect.Class (liftEffect)
-import Effect.Exception (throwException)
-import Node.ChildProcess (defaultExecOptions)
+import Effect.Exception (throw, throwException)
+import Node.ChildProcess.Types (Exit(..), KillSignal)
 import Node.Encoding (Encoding(..))
+import Node.FS.Aff (mkdtemp)
 import Node.FS.Aff as FSA
+import Node.Library.Execa (execa)
 import Node.Path (FilePath, sep)
 import Node.Path as Path
 import Node.Process (chdir)
+import Node.Process as Process
 import Test.Spec (SpecT, describe, it, sequential)
-import Test.Spec.Assertions (shouldEqual, shouldSatisfy)
+import Test.Spec.Assertions (shouldEqual)
 import Test.Spec.Reporter (consoleReporter)
 import Test.Spec.Runner (defaultConfig, runSpecT)
-import Test.Utils (delDir, mkdtempAff, runCmd)
+import Test.Utils (delDir)
 import UpChangelog.Constants as Constants
 import UpChangelog.Utils (wrapQuotes)
 
@@ -31,7 +34,7 @@ spec :: SpecT Aff Unit Aff Unit
 spec = do
   let
     pursChangelog cmd args =
-      runCmd defaultExecOptions "node" $ [ "../../bin/index.js", "--log-debug", cmd ] <> args
+      _.getResult =<< execa "node" ([ "../../bin/index.js", "--log-debug", cmd ] <> args) identity
     defaultReadme = Path.concat [ Constants.changelogDir, Constants.readmeFile ]
     readFile = FSA.readTextFile UTF8
 
@@ -41,23 +44,38 @@ spec = do
     withTempDir :: Aff Unit -> Aff Unit
     withTempDir = withTempDir' <<< const
 
+    _Normally :: Prism' Exit Int
+    _Normally = prism' Normally case _ of
+      Normally i -> Just i
+      _ -> Nothing
+
+    _BySignal :: Prism' Exit KillSignal
+    _BySignal = prism' BySignal case _ of
+      BySignal sig -> Just sig
+      _ -> Nothing
+
+    exitedNormally = eq (Just 0) <<< preview _Normally <<< _.exit
+
     withTempDir' :: (FilePath -> Aff Unit) -> Aff Unit
     withTempDir' f = do
+      originalDir <- liftEffect $ Process.cwd
       liftEffect $ chdir "test"
-      tempDir <- mkdtempAff "init"
+      testDir <- liftEffect $ Process.cwd
+      tempDir <- mkdtemp "init"
       liftEffect $ chdir tempDir
       res <- f tempDir
-      liftEffect $ chdir ".."
+      liftEffect $ chdir testDir
+
       delDir tempDir
-      liftEffect $ chdir ".."
+      liftEffect $ chdir originalDir
       pure res
 
   describe "Init command" do
     it "init - no args - files' content should match constants' content" do
       withTempDir do
-        { error } <- pursChangelog "init" []
-        for_ error \e -> liftEffect $ throwException e
-        error `shouldSatisfy` isNothing
+        result <- pursChangelog "init" []
+        when (not $ exitedNormally result) do
+          liftEffect $ throw $ result.stdout <> "\n" <> result.stderr
         readmeContent <- readFile defaultReadme
         logContent <- readFile Constants.changelogFile
         readmeContent `shouldEqual` Constants.readmeContent
@@ -65,25 +83,30 @@ spec = do
 
     it "init - does not ovewrite pre-existing files" do
       withTempDir do
-        { error } <- pursChangelog "init" []
-        error `shouldSatisfy` isNothing
-        { error: error2 } <- pursChangelog "init" []
-        error2 `shouldSatisfy` isJust
+        result1 <- pursChangelog "init" []
+        when (not $ exitedNormally result1) do
+          liftEffect $ throw $ "Did not exit normally.\n" <> result1.stdout <> "\n" <> result1.stderr
+        result2 <- pursChangelog "init" []
+        when (exitedNormally result2) do
+          liftEffect $ throw $ "Should have encountered problem.\n" <> result2.stdout <> "\n" <> result2.stderr
 
     it "init - force - ovewrites pre-existing files" do
       withTempDir do
-        { error } <- pursChangelog "init" []
-        error `shouldSatisfy` isNothing
-        { error: error2 } <- pursChangelog "init" [ "--overwrite-dir-readme" ]
-        error2 `shouldSatisfy` isNothing
+        result1 <- pursChangelog "init" []
+        when (not $ exitedNormally result1) do
+          liftEffect $ throw $ "Result 1 did not exit normally.\n" <> result1.stdout <> "\n" <> result1.stderr
+        result2 <- pursChangelog "init" [ "--overwrite-dir-readme" ]
+        when (not $ exitedNormally result2) do
+          liftEffect $ throw $ "Result 2 did not exit normally.\n" <> result2.stdout <> "\n" <> result2.stderr
 
     it "init - custom file paths - files' content should match constants' content" do
       withTempDir do
         let
           dir = "custom-dir"
           file = "custom-file"
-        { error } <- pursChangelog "init" [ "--changelog-dir", dir, "--changelog-file", file ]
-        error `shouldSatisfy` isNothing
+        result <- pursChangelog "init" [ "--changelog-dir", dir, "--changelog-file", file ]
+        when (not $ exitedNormally result) do
+          liftEffect $ throw $ "Result did not exit normally.\n" <> result.stdout <> "\n" <> result.stderr
         readmeContent <- readFile $ Path.concat [ dir, Constants.readmeFile ]
         logContent <- readFile file
         readmeContent `shouldEqual` Constants.readmeContent
@@ -94,20 +117,24 @@ spec = do
         let
           dir = "custom-dir"
           file = "custom-file"
-        { error } <- pursChangelog "init" [ "--changelog-dir", dir, "--changelog-file", file ]
-        error `shouldSatisfy` isNothing
-        { error: error2 } <- pursChangelog "init" [ "--changelog-dir", dir, "--changelog-file", file ]
-        error2 `shouldSatisfy` isJust
+        result1 <- pursChangelog "init" [ "--changelog-dir", dir, "--changelog-file", file ]
+        when (not $ exitedNormally result1) do
+          liftEffect $ throw $ "Result did not exit normally.\n" <> result1.stdout <> "\n" <> result1.stderr
+        result2 <- pursChangelog "init" [ "--changelog-dir", dir, "--changelog-file", file ]
+        when (exitedNormally result2) do
+          liftEffect $ throw $ "Result 2 should have encountered error.\n" <> result2.stdout <> "\n" <> result2.stderr
 
     it "init - custom file paths, force - overwrites pre-existing files" do
       withTempDir do
         let
           dir = "custom-dir"
           file = "custom-file"
-        { error } <- pursChangelog "init" [ "--changelog-dir", dir, "--changelog-file", file ]
-        error `shouldSatisfy` isNothing
-        { error: error2 } <- pursChangelog "init" [ "--overwrite-dir-readme", "--changelog-dir", dir, "--changelog-file", file ]
-        error2 `shouldSatisfy` isNothing
+        result1 <- pursChangelog "init" [ "--changelog-dir", dir, "--changelog-file", file ]
+        when (not $ exitedNormally result1) do
+          liftEffect $ throw $ "Result 1 did not exit normally.\n" <> result1.stdout <> "\n" <> result1.stderr
+        result2 <- pursChangelog "init" [ "--overwrite-dir-readme", "--changelog-dir", dir, "--changelog-file", file ]
+        when (not $ exitedNormally result2) do
+          liftEffect $ throw $ "Result 2 did not exit normally.\n" <> result2.stdout <> "\n" <> result2.stderr
 
   describe "Update command" do
     let
@@ -129,13 +156,14 @@ spec = do
         reset = do
           let
             entries = map wrapQuotes [ changeDir <> sep, changeFile ]
-          void $ runCmd defaultExecOptions "git" $ [ "checkout", "HEAD", "--" ] <> entries
+          void $ _.getResult =<< execa "git" ([ "checkout", "HEAD", "--" ] <> entries) identity
           liftEffect $ chdir "../.."
 
     it "update - no args - produces expected content" do
       withReset do
-        { error } <- pursChangelog "update" []
-        error `shouldSatisfy` isNothing
+        result <- pursChangelog "update" []
+        when (not $ exitedNormally result) do
+          liftEffect $ throw $ "Result did not exit normally.\n" <> result.stdout <> "\n" <> result.stderr
         files <- readDir Constants.changelogDir
         files `shouldEqual` [ Constants.readmeFile ]
         logContent <- readFile Constants.changelogFile
@@ -144,8 +172,9 @@ spec = do
 
     it "update - repo arg - produces expected content" do
       withReset do
-        { error } <- pursChangelog "update" [ "--repo", repoArg ]
-        error `shouldSatisfy` isNothing
+        result <- pursChangelog "update" [ "--repo", repoArg ]
+        when (not $ exitedNormally result) do
+          liftEffect $ throw $ "Result did not exit normally.\n" <> result.stdout <> "\n" <> result.stderr
         files <- readDir Constants.changelogDir
         files `shouldEqual` [ Constants.readmeFile ]
         logContent <- readFile Constants.changelogFile
@@ -154,8 +183,9 @@ spec = do
 
     it "update - version via package.json - produces expected content" do
       withReset do
-        { error } <- pursChangelog "update" [ "--repo", repoArg, "--package-json", "package.json" ]
-        error `shouldSatisfy` isNothing
+        result <- pursChangelog "update" [ "--repo", repoArg, "--package-json", "package.json" ]
+        when (not $ exitedNormally result) do
+          liftEffect $ throw $ "Result did not exit normally.\n" <> result.stdout <> "\n" <> result.stderr
         files <- readDir Constants.changelogDir
         files `shouldEqual` [ Constants.readmeFile ]
         logContent <- readFile Constants.changelogFile
@@ -164,8 +194,9 @@ spec = do
 
     it "update - explicit version - produces expected content" do
       withReset do
-        { error } <- pursChangelog "update" [ "--repo", repoArg, "--explicit-release", "1.2.3" ]
-        error `shouldSatisfy` isNothing
+        result <- pursChangelog "update" [ "--repo", repoArg, "--explicit-release", "1.2.3" ]
+        when (not $ exitedNormally result) do
+          liftEffect $ throw $ "Result did not exit normally.\n" <> result.stdout <> "\n" <> result.stderr
         files <- readDir Constants.changelogDir
         files `shouldEqual` [ Constants.readmeFile ]
         logContent <- readFile Constants.changelogFile
@@ -174,8 +205,9 @@ spec = do
 
     it "update - proj.cabal version - produces expected content" do
       withReset do
-        { error } <- pursChangelog "update" [ "--repo", repoArg, "--cabal", "proj.cabal" ]
-        error `shouldSatisfy` isNothing
+        result <- pursChangelog "update" [ "--repo", repoArg, "--cabal", "proj.cabal" ]
+        when (not $ exitedNormally result) do
+          liftEffect $ throw $ "Result did not exit normally.\n" <> result.stdout <> "\n" <> result.stderr
         files <- readDir Constants.changelogDir
         files `shouldEqual` [ Constants.readmeFile ]
         logContent <- readFile Constants.changelogFile

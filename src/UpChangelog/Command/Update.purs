@@ -2,11 +2,6 @@ module UpChangelog.Command.Update where
 
 import Prelude
 
-import Affjax (defaultRequest, printError)
-import Affjax as Affjax
-import Affjax.RequestHeader (RequestHeader(..))
-import Affjax.ResponseFormat as ARF
-import Affjax.StatusCode (StatusCode(..))
 import Control.Alt ((<|>))
 import Control.Apply (lift2)
 import Control.Monad.Reader (ask)
@@ -15,10 +10,8 @@ import Data.Array as Array
 import Data.Array.NonEmpty as NEA
 import Data.Either (Either(..), either, hush)
 import Data.Formatter.DateTime (unformat)
-import Data.HTTP.Method (Method(..))
 import Data.Int as Int
-import Data.Maybe (Maybe(..), fromMaybe, isJust)
-import Data.MediaType (MediaType(..))
+import Data.Maybe (Maybe(..), isJust)
 import Data.Newtype (over, unwrap)
 import Data.Nullable as Nullable
 import Data.RFC3339String.Format (iso8601Format)
@@ -26,17 +19,19 @@ import Data.Semigroup.Foldable (fold1)
 import Data.String (Pattern(..), toLower)
 import Data.String as String
 import Data.String.CodeUnits as SCU
-import Data.Traversable (fold, for, for_, traverse)
+import Data.Traversable (fold, for, traverse)
 import Data.Traversable as Foldable
 import Data.Tuple (Tuple(..), fst, snd)
 import Data.Version (Version, showVersion)
 import Data.Version as Version
 import Effect.Aff.Class (liftAff)
+import Fetch as Fetch
+import Foreign (unsafeFromForeign)
 import Node.Path (sep)
 import Node.Path as Path
-import Text.Parsing.Parser (runParser)
-import Text.Parsing.Parser.Combinators (many1)
-import Text.Parsing.Parser.String (satisfy, string)
+import Parsing (runParser)
+import Parsing.Combinators.Array (many1)
+import Parsing.String (satisfy, string)
 import UpChangelog.App (App, die, logDebug, logInfo, pathExists, readDir, readTextFile, withApp, writeTextFile)
 import UpChangelog.Constants as Constants
 import UpChangelog.Git (git)
@@ -57,10 +52,10 @@ update = do
   logInfo $ "# of entries found in changelog: " <> (show $ Array.length entries)
   logDebug $ "Entries found in changelog dir were:\n" <> String.joinWith "\n" entries
 
-  breaks <- processEntriesStartingWith "break" entries
-  features <- processEntriesStartingWith "feat" entries
+  breaks <- processEntriesStartingWith "breaking" entries
+  features <- processEntriesStartingWith "feature" entries
   fixes <- processEntriesStartingWith "fix" entries
-  internal <- processEntriesStartingWith "int" entries
+  internal <- processEntriesStartingWith "internal" entries
   misc <- processEntriesStartingWith "misc" entries
 
   let entryFiles = (_.file <<< unwrap) <$> breaks <> features <> fixes <> internal <> misc
@@ -266,30 +261,30 @@ getPrAuthors prNumbers = do
 lookupPRAuthor :: Int -> App (gh :: GHOwnerRepo, mbToken :: Maybe String) String
 lookupPRAuthor prNum = do
   { gh, mbToken } <- ask
-  let
-    url = "https://api.github.com/repos/" <> gh.owner <> "/" <> gh.repo <> "/pulls/" <> show prNum
-    headers = [ Accept $ MediaType "application/vnd.github.v3+json" ]
+  let url = "https://api.github.com/repos/" <> gh.owner <> "/" <> gh.repo <> "/pulls/" <> show prNum
   logDebug $ "Sending GET request to: " <> url
-  resp <- liftAff $ Affjax.request $ defaultRequest
-    { url = url
-    , responseFormat = ARF.json
-    , method = Left GET
-    , headers = fromMaybe headers do
-        tok <- mbToken
-        pure $ Array.snoc headers $ RequestHeader "Authorization" $ "token" <> tok
-    }
-  for_ resp \js -> do
-    logDebug $ "Got response: " <> show js.status <> " " <> show js.statusText
-  case resp of
-    Left err -> die $ printError err
-    Right js | js.status == StatusCode 200 -> do
-      case decodeJson js.body of
-        Left e -> do
-          die $ "Error in lookupPRAuthor: " <> printJsonDecodeError e
-        Right (rec :: { user :: { login :: String } }) -> do
-          pure rec.user.login
-    Right js -> do
-      die $ "Lookup PR author failed. " <> show js.status <> " " <> show js.statusText
+  resp <- liftAff case mbToken of
+    Just tok ->
+      Fetch.fetch url
+        { headers:
+            { "Accept": "application/vnd.github.v3+json"
+            , "Authorization": "token" <> tok
+            }
+        }
+    Nothing ->
+      Fetch.fetch url
+        { headers:
+            { "Accept": "application/vnd.github.v3+json"
+            }
+        }
+  logDebug $ "Got response: " <> show resp.status <> " " <> show resp.statusText
+  unless (resp.status == 200) $ die $ "Lookup PR author failed. " <> show resp.status <> " " <> show resp.statusText
+  j <- liftAff resp.json
+  case decodeJson $ unsafeFromForeign j of
+    Left e -> do
+      die $ "Error in lookupPRAuthor: " <> printJsonDecodeError e
+    Right (rec :: { user :: { login :: String } }) -> do
+      pure rec.user.login
 
 getVersion :: App (cli :: UpdateArgs) String
 getVersion = do
