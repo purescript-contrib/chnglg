@@ -187,7 +187,7 @@ spec = do
 
     it "update - version via package.json - produces expected content" do
       withReset do
-        result <- pursChangelog "update" [ "--repo", repoArg, "--package-json", "package.json" ]
+        result <- pursChangelog "update" [ "--repo", repoArg, "--from-package-json", "package.json" ]
         when (not $ exitedNormally result) do
           liftEffect $ throw $ "Result did not exit normally.\n" <> result.stdout <> "\n" <> result.stderr
         files <- readDir Constants.changelogDir
@@ -198,7 +198,7 @@ spec = do
 
     it "update - explicit version - produces expected content" do
       withReset do
-        result <- pursChangelog "update" [ "--repo", repoArg, "--explicit-release", "1.2.3" ]
+        result <- pursChangelog "update" [ "--repo", repoArg, "--from-version", "1.2.3" ]
         when (not $ exitedNormally result) do
           liftEffect $ throw $ "Result did not exit normally.\n" <> result.stdout <> "\n" <> result.stderr
         files <- readDir Constants.changelogDir
@@ -209,7 +209,7 @@ spec = do
 
     it "update - proj.cabal version - produces expected content" do
       withReset do
-        result <- pursChangelog "update" [ "--repo", repoArg, "--cabal", "proj.cabal" ]
+        result <- pursChangelog "update" [ "--repo", repoArg, "--from-cabal", "proj.cabal" ]
         when (not $ exitedNormally result) do
           liftEffect $ throw $ "Result did not exit normally.\n" <> result.stdout <> "\n" <> result.stderr
         files <- readDir Constants.changelogDir
