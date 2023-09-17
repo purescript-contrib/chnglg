@@ -2,7 +2,12 @@ let config = ./spago.dhall
 
 let thisConfig =
       { dependencies =
-        [ "node-child-process", "node-process", "profunctor-lenses", "spec" ]
+        [ "console"
+        , "node-child-process"
+        , "node-process"
+        , "profunctor-lenses"
+        , "spec"
+        ]
       , sources = [ "test/**/*.purs" ]
       }
 
