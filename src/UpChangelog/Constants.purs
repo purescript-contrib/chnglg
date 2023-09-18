@@ -18,7 +18,7 @@ Notable changes to this project are documented in this file. The format is based
 
 ## 0.0.0
 
-Ran `purs-changelog`
+Ran `chnglg`
 """
 
 -- | "CHANGELOG.d"

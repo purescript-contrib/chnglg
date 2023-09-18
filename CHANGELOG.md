@@ -4,6 +4,12 @@ Notable changes to this project are documented in this file. The format is based
 
 ## 0.5.0
 
+Internal:
+
+* Rename project to `chnglg`
+
+## 0.5.0
+
 Breaking changes:
 
 * Replace `--force` with `--overwrite-dir-readme` flag (#14 by @JordanMartinez)

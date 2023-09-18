@@ -1,9 +1,9 @@
 {
-  "name": "uplog",
+  "name": "chnglg",
   "version": "0.5.0",
   "description": "A maintainer and contributor-friendly tool for generating a human-readable CHANGELOG.md",
   "bin": {
-    "uplog": "bin/index.mjs"
+    "chnglg": "bin/index.mjs"
   },
   "files": [
     "bin/index.mjs"
