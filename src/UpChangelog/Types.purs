@@ -17,6 +17,7 @@ data VersionSource
   | Cabal FilePath
   | ExplicitVersion Version.Version
   | FromGitTag
+  | Custom String
 
 -- | PursJson FilePath -- support in future
 derive instance Eq VersionSource

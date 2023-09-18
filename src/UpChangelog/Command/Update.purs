@@ -312,6 +312,8 @@ getVersion = do
           die $ "Error in getVersion for `Cabal` case: did not find a line with content: `version: <versionString>`."
         Just versionStr -> do
           pure $ String.trim versionStr
+    Custom str ->
+      pure str
 
   where
   -- | Get the version tag pointing to the currently checked out commit, if any.
