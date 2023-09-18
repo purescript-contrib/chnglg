@@ -1,9 +1,9 @@
 {
-  "name": "purs-changelog",
+  "name": "uplog",
   "version": "0.4.0",
   "description": "A maintainer and contributor-friendly tool for generating a human-readable CHANGELOG.md",
   "bin": {
-    "purs-changelog": "bin/index.mjs"
+    "uplog": "bin/index.mjs"
   },
   "files": [
     "bin/index.mjs"
@@ -23,7 +23,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/jordanmartinez/purescript-up-changelog.git"
+    "url": "git+https://github.com/purescript-contrib/uplog.git"
   },
   "keywords": [
     "PureScript",
@@ -32,9 +32,9 @@
   "author": "Jordan Martinez <jordanalex.martinez@protonmail.com> (https://github.com/jordanmartinez/)",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/jordanmartinez/purescript-up-changelog/issues"
+    "url": "https://github.com/purescript-contrib/uplog/issues"
   },
-  "homepage": "https://github.com/jordanmartinez/purescript-up-changelog#readme",
+  "homepage": "https://github.com/purescript-contrib/uplog#readme",
   "devDependencies": {
     "esbuild": "^0.19.3",
     "purescript": "^0.15.10",
