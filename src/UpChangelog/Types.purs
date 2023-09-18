@@ -29,6 +29,7 @@ type UpdateArgs =
   , mbToken :: Maybe String
   , changelogFile :: FilePath
   , changelogDir :: FilePath
+  , dryRun :: Boolean
   }
 
 type InitArgs =

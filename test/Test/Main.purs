@@ -23,7 +23,7 @@ import Node.Path as Path
 import Node.Process (chdir)
 import Node.Process as Process
 import Test.Spec (SpecT, afterAll, after_, around_, beforeAll, describe, it, sequential)
-import Test.Spec.Assertions (shouldEqual)
+import Test.Spec.Assertions (shouldEqual, shouldNotEqual)
 import Test.Spec.Reporter (consoleReporter)
 import Test.Spec.Runner (defaultConfig, runSpecT)
 import Test.Utils (delDir)
@@ -181,6 +181,16 @@ spec = do
           logContent <- readFile Constants.changelogFile
           expectedContent <- readFile correctFile
           logContent `shouldEqual` expectedContent
+
+        it "update - dry-run does not modify file content" \{ repo, correctFile } -> do
+          result <- pursChangelog "update" [ "--repo", repo, "--dry-run" ]
+          when (not $ exitedNormally result) do
+            liftEffect $ throw $ "Result did not exit normally.\n" <> result.stdout <> "\n" <> result.stderr
+          files <- readDir Constants.changelogDir
+          files `shouldNotEqual` [ Constants.readmeFile ]
+          logContent <- readFile Constants.changelogFile
+          expectedContent <- readFile correctFile
+          logContent `shouldNotEqual` expectedContent
 
 withTempDir :: Aff Unit -> Aff Unit
 withTempDir f = do

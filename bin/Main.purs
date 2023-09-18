@@ -103,10 +103,15 @@ cliParser =
       versionSource <- versionSourceArg
       changelogFile <- changelogFileArg
       changelogDir <- changelogDirArg
+      dryRun <- dryRunArg
       Arg.flagHelp
-      in Update { github, versionSource, mbToken, changelogFile, changelogDir }
+      in Update { github, versionSource, mbToken, changelogFile, changelogDir, dryRun }
     where
     cmdDesc = "Updates the changelog file with a new releae entry based on files in the changelog directory"
+    dryRunArg = Arg.flag [ "--dry-run" ] desc
+      # Arg.boolean
+      where
+      desc = "Print to stdout what the new section in the changelog file would be"
     githubRepoArg =
       Arg.choose "repo"
         [ map Left remoteArg
