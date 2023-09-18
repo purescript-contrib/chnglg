@@ -22,7 +22,7 @@ import Node.Path (FilePath)
 import Node.Path as Path
 import Node.Process (chdir)
 import Node.Process as Process
-import Test.Spec (SpecT, afterAll, after_, around_, beforeAll, describe, it, itOnly, sequential)
+import Test.Spec (SpecT, afterAll, after_, around_, beforeAll, describe, it, sequential)
 import Test.Spec.Assertions (shouldEqual)
 import Test.Spec.Reporter (consoleReporter)
 import Test.Spec.Runner (defaultConfig, runSpecT)
@@ -164,6 +164,16 @@ spec = do
 
         it "update - proj.cabal version - produces expected content" \{ repo, correctFile } -> do
           result <- pursChangelog "update" [ "--repo", repo, "--from-cabal", "proj.cabal" ]
+          when (not $ exitedNormally result) do
+            liftEffect $ throw $ "Result did not exit normally.\n" <> result.stdout <> "\n" <> result.stderr
+          files <- readDir Constants.changelogDir
+          files `shouldEqual` [ Constants.readmeFile ]
+          logContent <- readFile Constants.changelogFile
+          expectedContent <- readFile correctFile
+          logContent `shouldEqual` expectedContent
+
+        it "update - custom - produces expected content" \{ repo, correctFile } -> do
+          result <- pursChangelog "update" [ "--repo", repo, "--from-custom", "1.2.3" ]
           when (not $ exitedNormally result) do
             liftEffect $ throw $ "Result did not exit normally.\n" <> result.stdout <> "\n" <> result.stderr
           files <- readDir Constants.changelogDir

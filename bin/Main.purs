@@ -149,6 +149,7 @@ cliParser =
         , byCabalFile
         , byGitTag
         , byExplicitVersion
+        , byCustom
         ]
         # Arg.default (PackageJson "package.json")
       where
@@ -180,6 +181,11 @@ cliParser =
           # Arg.unformat "SEMVER_VERSION" (bimap show ExplicitVersion <<< Version.parseVersion)
         where
         desc = "For the changelog's header's version string, use the user-provided version via the semver scheme (e.g. `MAJOR.MINOR.PATCH`)."
+      byCustom =
+        Arg.argument [ "--from-custom" ] desc
+          # Arg.unformat "CUSTOM" (Right <<< Custom <<< String.trim)
+        where
+        desc = "For the changelog's header's version string, use the user-provided string."
 
   initCommand =
     Arg.command [ "init", "i" ] "Sets up the repo so that the `update` command will work in the future." ado
