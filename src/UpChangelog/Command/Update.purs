@@ -27,6 +27,7 @@ import Data.Tuple (Tuple(..))
 import Data.Version (Version, showVersion)
 import Data.Version as Version
 import Effect.Aff.Class (liftAff)
+import Effect.Class.Console (log)
 import Fetch as Fetch
 import Foreign (unsafeFromForeign)
 import Node.Path (sep)
@@ -43,7 +44,7 @@ import UpChangelog.Utils (breakOn, breakOnEnd, breakOnSpace, commaSeparate, line
 update :: App (cli :: UpdateArgs) Unit
 update = do
   checkFilePaths
-  { cli: { changelogDir, changelogFile } } <- ask
+  { cli: { changelogDir, changelogFile, dryRun } } <- ask
   entries' <- (lines <<< _.stdout) <$> git "ls-tree" [ "--name-only", "HEAD", changelogDir <> sep ]
   let
     readmeFile = Path.concat [ changelogDir, Constants.readmeFile ]
@@ -74,23 +75,27 @@ update = do
     , after: changelogRest
     } <- breakOn (Pattern "\n## ") <$> readTextFile changelogFile
     logDebug $ "Changelog preamble is: \n" <> changelogPreamble
-    writeTextFile changelogFile $
-      changelogPreamble
-        <> "\n## "
-        <> version
-        <> "\n"
-        <> conditionalSection "Breaking changes" breaks
-        <> conditionalSection "New features" features
-        <> conditionalSection "Bugfixes" fixes
-        <> conditionalSection "Other improvements" misc
-        <> conditionalSection "Internal" internal
-        <> changelogRest
-    logInfo $ "Updated changelog file"
+    let
+      newSectionContent =
+        "## "
+          <> version
+          <> "\n"
+          <> conditionalSection "Breaking changes" breaks
+          <> conditionalSection "New features" features
+          <> conditionalSection "Bugfixes" fixes
+          <> conditionalSection "Other improvements" misc
+          <> conditionalSection "Internal" internal
+    if dryRun then do
+      logInfo "Ran using --dry-run flag. Printing what would be the new section to stdout: "
+      log newSectionContent
+    else do
+      writeTextFile changelogFile $ changelogPreamble <> "\n" <> newSectionContent <> changelogRest
+      logInfo $ "Updated changelog file"
 
-    void $ git "add" [ changelogFile ]
-    logDebug $ "Staged changelog file in git"
-    void $ git "rm" entryFiles
-    logDebug $ "Staged the deletion of the changelog entry files in git"
+      void $ git "add" [ changelogFile ]
+      logDebug $ "Staged changelog file in git"
+      void $ git "rm" entryFiles
+      logDebug $ "Staged the deletion of the changelog entry files in git"
   where
   checkFilePaths = do
     { cli: options } <- ask
