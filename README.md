@@ -55,7 +55,7 @@ are grouped together in the final section for a given release in the `CHANGELOG.
 | Prefix     | Group Title        | Meaning                                            |
 | ---------- | ------------------ | -------------------------------------------------- |
 | `breaking` | Breaking changes   | self-explanatory                                   |
-| `feat`     | New features       | self-explanatory                                   |
+| `feature`  | New features       | self-explanatory                                   |
 | `fix`      | Bugfixes           | self-explanatory                                   |
 | `misc`     | Other improvements | anything else that needs to be logged              |
 | `int`      | Internal           | work that doesn't directly affect users of project |
