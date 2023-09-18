@@ -59,14 +59,6 @@ newtype ChangelogEntry = ChangelogEntry
 
 derive instance newtypeChangelogEntry :: Newtype ChangelogEntry _
 
-newtype GitLogCommit a = GitLogCommit
-  { data :: a
-  , hash :: String
-  , time :: DateTime
-  }
-
-derive instance newtypeGitLogCommit :: Newtype (GitLogCommit a) _
-
 data CommitType
   = MergeCommit
   | SquashCommit
