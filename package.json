@@ -1,6 +1,6 @@
 {
   "name": "chnglg",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "A maintainer and contributor-friendly tool for generating a human-readable CHANGELOG.md",
   "bin": {
     "chnglg": "bin/index.mjs"
