@@ -45,7 +45,7 @@ main = do
           launchAff_ $ runApp init { logger: mkLogger logType, cli: options }
 
 version :: String
-version = "0.5.0"
+version = "0.5.3"
 
 mkLogger :: LoggerType -> Logger Effect
 mkLogger = case _ of
