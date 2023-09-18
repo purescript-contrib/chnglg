@@ -9,6 +9,6 @@
 /.purs*
 /.psa*
 /.spago
-/bin/index.js
+/bin/index.mjs
 /.vscode
 /output-es/

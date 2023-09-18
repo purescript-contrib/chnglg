@@ -7,12 +7,14 @@ import Control.Apply (lift2)
 import Control.Monad.Reader (ask)
 import Data.Argonaut.Decode (decodeJson, parseJson, printJsonDecodeError)
 import Data.Array as Array
+import Data.Array.NonEmpty (NonEmptyArray)
 import Data.Array.NonEmpty as NEA
 import Data.Either (Either(..), either, hush)
+import Data.Filterable (partitionMap)
 import Data.Formatter.DateTime (unformat)
 import Data.Int as Int
-import Data.Maybe (Maybe(..), isJust)
-import Data.Newtype (over, unwrap)
+import Data.Maybe (Maybe(..), isJust, maybe)
+import Data.Newtype (unwrap)
 import Data.Nullable as Nullable
 import Data.RFC3339String.Format (iso8601Format)
 import Data.Semigroup.Foldable (fold1)
@@ -21,7 +23,7 @@ import Data.String as String
 import Data.String.CodeUnits as SCU
 import Data.Traversable (fold, for, traverse)
 import Data.Traversable as Foldable
-import Data.Tuple (Tuple(..), fst, snd)
+import Data.Tuple (Tuple(..))
 import Data.Version (Version, showVersion)
 import Data.Version as Version
 import Effect.Aff.Class (liftAff)
@@ -35,8 +37,8 @@ import Parsing.String (satisfy, string)
 import UpChangelog.App (App, die, logDebug, logInfo, pathExists, readDir, readTextFile, withApp, writeTextFile)
 import UpChangelog.Constants as Constants
 import UpChangelog.Git (git)
-import UpChangelog.Types (ChangelogEntry(..), CommitType(..), GHOwnerRepo, GitLogCommit(..), VersionSource(..), UpdateArgs)
-import UpChangelog.Utils (breakOn, breakOnEnd, breakOnSpace, commaSeparate, lines, toUtcDate, wrapQuotes)
+import UpChangelog.Types (ChangelogEntry(..), CommitType(..), GHOwnerRepo, UpdateArgs, VersionSource(..))
+import UpChangelog.Utils (breakOn, breakOnEnd, breakOnSpace, commaSeparate, lines, toUtcDate)
 
 update :: App (cli :: UpdateArgs) Unit
 update = do
@@ -62,7 +64,7 @@ update = do
   if (Array.null entryFiles) then do
     die $ "Cannot update changelog file as there aren't any valid entries in '" <> changelogDir <> "'."
   else do
-    changes <- git "status" $ [ "-s", "--" ] <> (map wrapQuotes $ Array.cons changelogFile entryFiles)
+    changes <- git "status" $ [ "-s", "--" ] <> Array.cons changelogFile entryFiles
     unless (changes.stdout == "") $ die $
       "You have uncommitted changes to changelog files. " <>
         "Please commit, stash, or revert them before running this script."
@@ -87,7 +89,7 @@ update = do
 
     void $ git "add" [ changelogFile ]
     logDebug $ "Staged changelog file in git"
-    void $ git "rm" $ map wrapQuotes entryFiles
+    void $ git "rm" entryFiles
     logDebug $ "Staged the deletion of the changelog entry files in git"
   where
   checkFilePaths = do
@@ -116,64 +118,64 @@ processEntriesStartingWith prefix arr = do
 
 updateEntry :: String -> App (cli :: UpdateArgs) ChangelogEntry
 updateEntry file = do
-  logDebug $ "Reading content of file entry: " <> file
-  { before: header, after: body } <- map (breakOn (Pattern "\n") <<< String.trim) $ (readTextFile <<< Path.normalize) file
-
-  allCommits <- do
-    -- 2c78eb614cb1f3556737900e57d0e7395158791e 2021-11-17T13:27:33-08:00 Title of PR (#4121)
-    lns <- map (lines <<< _.stdout) $ git "log" [ "-m", "--follow", "--format=\"%H %cI %s\"", wrapQuotes file ]
+  { left: otherCommitHashes, right: mainCommits } <- do
+    -- 2c78eb614cb1f3556737900e57d0e7395158791e,2021-11-17T13:27:33-08:00,Title of PR (#4121),parentHash1 parentHash2 ... parentHashN
+    result <- git "log" [ "-m", "--follow", "--format=%H,%cI,%s,%P", file ]
+    let lns = lines $ result.stdout
     logDebug $ "For file, '" <> file <> "', got commits:\n" <> String.joinWith "\n" lns
-    mbRes <- for lns \str -> do
-      let
-        { before: hash, after: spaceRemaining } = breakOnSpace str
-        { before: dateTime, after: spaceData } = breakOnSpace $ String.drop 1 spaceRemaining
-      let
-        mbTime = do
-          str' <- Nullable.toMaybe $ toUtcDate dateTime
-          hush $ unformat iso8601Format str'
-      pure $ mbTime <#> \time -> GitLogCommit
-        { data: String.drop 1 spaceData
-        , hash
-        , time
-        }
-    case NEA.fromArray $ Array.sortWith (_.time <<< unwrap) $ Array.catMaybes mbRes of
-      Nothing -> do
-        die $ "No commits for file: " <> file
-      Just x -> do
-        pure x
-
-  prCommits <- map Array.catMaybes $ for (NEA.toArray allCommits) \glc -> do
-    case parsePRNumber (_.data $ unwrap glc) of
-      Nothing -> do
-        pure Nothing
-      Just pr -> do
+    map (partitionMap identity <<< Array.catMaybes) $ for lns \str -> case String.split (Pattern ",") str of
+      [ hash, dateTimeStr, subject, parentHashes ] -> do
         let
-          withPr :: GitLogCommit String -> GitLogCommit (Tuple CommitType Int)
-          withPr = over GitLogCommit (_ { data = pr })
+          mbCommitInfo = do
+            str' <- Nullable.toMaybe $ toUtcDate dateTimeStr
+            time <- hush $ unformat iso8601Format str'
+            parents <- NEA.fromArray $ String.split (Pattern " ") parentHashes
+            pure { time, parents }
+        mbCommitInfo # maybe (pure Nothing) \{ time, parents } ->
+          case parsePRNumber subject of
+            Nothing -> do
+              pure $ Just $ Left hash
+            Just (Tuple commitType pr) -> do
+              let glc = { hash, time, pr, parents, commitType }
+              case commitType of
+                MergeCommit ->
+                  pure $ Just $ Right glc
+                SquashCommit -> do
+                  interesting <- isInterestingSquashCommit glc
+                  pure if interesting then Just $ Right glc else Nothing
+      _ ->
+        pure Nothing
 
-          glcWithPr = withPr glc
-        interesting <- isInterestingCommit glcWithPr
-        pure if interesting then Just glcWithPr else Nothing
+  let
+    { left: mergeCommits, right: squashCommits } = mainCommits # partitionMap \r -> case r.commitType of
+      MergeCommit -> Left r
+      SquashCommit -> Right r
 
-  let prNumbers = map (snd <<< _.data <<< unwrap) prCommits
+    validMergeCommits = Array.filter (_.parents >>> NEA.any (flip Array.elem otherCommitHashes)) mergeCommits
+  relevantCommitsForFile <- case NEA.fromArray $ Array.sortWith _.time $ squashCommits <> validMergeCommits of
+    Nothing -> die $ "No relevant commits found for file: " <> file
+    Just a -> pure a
+
+  let prNumbers = map _.pr relevantCommitsForFile
   logDebug $ "For file, '" <> file <> "', got PR Numbers:" <> show prNumbers
 
   prAuthors <- getPrAuthors prNumbers
 
+  logDebug $ "Reading content of file entry: " <> file
+  { before: header, after: body } <- map (breakOn (Pattern "\n") <<< String.trim) $ (readTextFile <<< Path.normalize) file
+
   let
     headerSuffix =
-      if Array.null prNumbers then ""
-      else
-        " ("
-          <> commaSeparate (map ((append "#") <<< show) prNumbers)
-          <> " by "
-          <> commaSeparate (map (append "@") prAuthors)
-          <> ")"
+      " ("
+        <> commaSeparate (map ((append "#") <<< show) prNumbers)
+        <> " by "
+        <> commaSeparate (map (append "@") prAuthors)
+        <> ")"
 
   pure $ ChangelogEntry
     { file
     , content: header <> headerSuffix <> body <> "\n"
-    , date: (_.time <<< unwrap) $ NEA.head allCommits
+    , date: _.time $ NEA.head relevantCommitsForFile
     }
 
 parsePRNumber :: String -> Maybe (Tuple CommitType Int)
@@ -184,27 +186,26 @@ parsePRNumber = lift2 (<|>) parseMerge parseSquash
     map (Tuple MergeCommit) $ Int.fromString $ _.before $ breakOnSpace res
 
   parseSquash s = do
-    res <- String.stripSuffix (Pattern ")")
-      $ String.drop 2 -- (#
-      $ _.after
-      $ breakOnEnd (Pattern "(#") s
+    let
+      res = _.before
+        $ breakOn (Pattern ")")
+        $ String.drop 2 -- (#
+        $ _.after
+        $ breakOnEnd (Pattern "(#") s
     map (Tuple SquashCommit) $ Int.fromString res
 
 -- | This function helps us exclude PRs that are just fixups of changelog
 -- | wording. An interesting commit is one that has either edited a file that
 -- | isn't part of the changelog, or is a merge commit.
-isInterestingCommit :: GitLogCommit (Tuple CommitType Int) -> App (cli :: UpdateArgs) Boolean
-isInterestingCommit (GitLogCommit r) = case fst r.data of
-  MergeCommit -> do
-    pure true
-  SquashCommit -> do
-    { stdout } <- git "show" [ "--format=", "--name-only", r.hash ]
-    pure
-      $ not
-      $ Array.all (\path -> "CHANGELOG.md" == path || (isJust $ String.stripPrefix (Pattern "CHANGELOG.d/") path))
-      $ lines stdout
+isInterestingSquashCommit :: forall r. { hash :: String | r } -> App (cli :: UpdateArgs) Boolean
+isInterestingSquashCommit r = do
+  { stdout } <- git "show" [ "--format=", "--name-only", r.hash ]
+  pure
+    $ not
+    $ Array.all (\path -> "CHANGELOG.md" == path || (isJust $ String.stripPrefix (Pattern "CHANGELOG.d/") path))
+    $ lines stdout
 
-getPrAuthors :: Array Int -> App (cli :: UpdateArgs) (Array String)
+getPrAuthors :: NonEmptyArray Int -> App (cli :: UpdateArgs) (NonEmptyArray String)
 getPrAuthors prNumbers = do
   { cli: { github, mbToken } } <- ask
   gh <- case github of
@@ -214,19 +215,14 @@ getPrAuthors prNumbers = do
       pure repo
   let
     lookupPRAuthor' = withApp (\r -> { logger: r.logger, gh, mbToken }) <<< lookupPRAuthor
-  Array.nub <$> traverse lookupPRAuthor' prNumbers
+  NEA.nub <$> traverse lookupPRAuthor' prNumbers
   where
   findRemote name = do
     remotes <- map (lines <<< _.stdout) $ git "remote" [ "-v" ]
     logDebug $ "Git remotes are:\n" <> String.joinWith "\n" remotes
-    let
-      mbRemote =
-        Array.head
-          $ Array.catMaybes
-          $ map (\s -> String.stripPrefix (Pattern name) s) remotes
-    case mbRemote of
+    case Array.findMap (String.stripPrefix (Pattern name)) remotes of
       Nothing -> do
-        die $ "Did not find a remote named '" <> name <> "'. See all available remotes via `git remote -v`"
+        die $ "Did not find a remote named '" <> name <> "'. Available remote names are: " <> show (Array.nub remotes)
       Just url -> do
         case runParser (String.trim url) remoteRepoParser of
           Left e -> do
@@ -254,7 +250,6 @@ getPrAuthors prNumbers = do
       void $ string "https://github.com/"
       owner <- map fold $ many1 $ map SCU.singleton $ satisfy (\c -> c /= '/')
       void $ satisfy (\c -> c == '/')
-      --
       repo <- map fold $ many1 $ map SCU.singleton $ satisfy (\c -> c /= '.' && c /= ' ')
       pure { owner, repo }
 

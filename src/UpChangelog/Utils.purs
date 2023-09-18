@@ -3,12 +3,13 @@ module UpChangelog.Utils where
 import Prelude
 
 import Data.Array as Array
+import Data.Array.NonEmpty (NonEmptyArray)
+import Data.Array.NonEmpty as NEA
 import Data.Maybe (Maybe(..), maybe)
 import Data.Nullable (Nullable)
 import Data.String (Pattern(..))
 import Data.String as String
 import Data.Traversable (for)
-import Partial.Unsafe (unsafeCrashWith)
 
 breakOnSpace :: String -> { before :: String, after :: String }
 breakOnSpace = breakOn (Pattern " ")
@@ -26,17 +27,11 @@ breakOnEnd ptn s = maybe { before: "", after: s } (flip String.splitAt s) mbIdx
 lines :: String -> Array String
 lines = String.split (Pattern "\n")
 
-wrapQuotes :: String -> String
-wrapQuotes s = "\"" <> s <> "\""
-
-commaSeparate :: Array String -> String
-commaSeparate = case _ of
-  [] -> ""
-  [ a ] -> a
-  [ a, b ] -> a <> " and " <> b
-  more
-    | Just { init, last } <- Array.unsnoc more -> String.joinWith ", " init <> ", and " <> last
-    | otherwise -> unsafeCrashWith "This is not possible"
+commaSeparate :: NonEmptyArray String -> String
+commaSeparate arr
+  | NEA.length arr == 1 = NEA.head arr
+  | NEA.length arr == 2 = NEA.head arr <> " and " <> NEA.last arr
+  | otherwise = (String.joinWith ", " $ NEA.init arr) <> ", and " <> NEA.last arr
 
 filterM :: forall m a. Monad m => (a -> m Boolean) -> Array a -> m (Array a)
 filterM p arr = do
