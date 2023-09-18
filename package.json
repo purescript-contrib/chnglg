@@ -1,6 +1,6 @@
 {
   "name": "uplog",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "A maintainer and contributor-friendly tool for generating a human-readable CHANGELOG.md",
   "bin": {
     "uplog": "bin/index.mjs"
