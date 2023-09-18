@@ -12,7 +12,7 @@ git add package.json bin/Main.purs
 git commit -m "Update version"
 
 npm run bundle
-./bin/index.js update
+./bin/index.mjs update
 git commit -m "Update changelog"
 
 gh pr create
