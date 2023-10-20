@@ -4,12 +4,16 @@ A port of the work done in [`purescript/purescript#4392`](https://github.com/pur
 
 ![ci badge](https://github.com/purescript-contrib/uplog/actions/workflows/ci.yml/badge.svg)
 
-## Install
+## Getting started
 
 The first working release is `v0.5.1`.
 
 ```sh
 npm i chnglg
+```
+
+```sh
+nix run github:purescript-contrib/chnglg
 ```
 
 ## Why

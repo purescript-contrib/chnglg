@@ -2,7 +2,10 @@
 , dependencies =
   [ "aff"
   , "argonaut-codecs"
+  , "argparse-basic"
   , "arrays"
+  , "bifunctors"
+  , "console"
   , "control"
   , "datetime"
   , "effect"
@@ -20,6 +23,7 @@
   , "node-execa"
   , "node-fs"
   , "node-path"
+  , "node-process"
   , "nullable"
   , "parsing"
   , "precise-datetime"
@@ -30,5 +34,5 @@
   , "versions"
   ]
 , packages = ./packages.dhall
-, sources = [ "src/**/*.purs" ]
+, sources = [ "src/**/*.purs", "bin/**/*.purs" ]
 }
